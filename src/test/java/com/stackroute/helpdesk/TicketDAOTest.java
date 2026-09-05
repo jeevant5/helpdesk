@@ -143,4 +143,41 @@ public class TicketDAOTest {
         Map<String, Integer> countsAfter = ticketDAO.getStatusCounts();
         assertTrue(countsAfter.get("RESOLVED") >= 1, "Resolved count should be at least 1");
     }
+
+    @Test
+    @Order(6)
+    public void testUserAndTechnicianRegistration() {
+        // Test checking existing email
+        assertTrue(userDAO.isEmailTaken("john@example.com"), "John's email should be taken");
+        assertFalse(userDAO.isEmailTaken("newtech@company.com"), "New email should not be taken");
+
+        // Test registering a new Technician
+        User newTech = new User();
+        newTech.setName("Marcus Vance");
+        newTech.setEmail("marcus.vance@company.com");
+        newTech.setPassword("securePass123");
+        newTech.setRole("TECHNICIAN");
+
+        boolean regSuccess = userDAO.registerUser(newTech);
+        assertTrue(regSuccess, "Registration should succeed");
+        assertTrue(newTech.getUserId() > 0, "Generated user ID should be positive");
+
+        // Verify login with newly registered technician
+        User authenticated = userDAO.authenticate("marcus.vance@company.com", "securePass123");
+        assertNotNull(authenticated);
+        assertEquals("Marcus Vance", authenticated.getName());
+        assertTrue(authenticated.isTechnician(), "Should have technician privileges");
+
+        // Test registering a new End-User
+        User newUser = new User();
+        newUser.setName("Emily Rose");
+        newUser.setEmail("emily.rose@company.com");
+        newUser.setPassword("userPass456");
+        newUser.setRole("USER");
+
+        assertTrue(userDAO.registerUser(newUser));
+        User authUser = userDAO.authenticate("emily.rose@company.com", "userPass456");
+        assertNotNull(authUser);
+        assertFalse(authUser.isTechnician());
+    }
 }

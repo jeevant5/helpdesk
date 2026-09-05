@@ -45,6 +45,15 @@
                 <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
                     <i class="bi bi-box-arrow-in-right me-1"></i>Sign In
                 </button>
+
+                <div class="text-center mt-3">
+                    <p class="small text-muted mb-0">
+                        Don't have an account? 
+                        <a href="${pageContext.request.contextPath}/register" class="fw-bold text-success text-decoration-none">
+                            <i class="bi bi-person-plus me-1"></i>Sign Up here
+                        </a>
+                    </p>
+                </div>
             </form>
 
             <hr class="my-4">

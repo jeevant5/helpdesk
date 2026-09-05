@@ -111,8 +111,11 @@
                         </a>
                     </c:when>
                     <c:otherwise>
-                        <a href="${pageContext.request.contextPath}/login" class="btn btn-primary btn-sm">
+                        <a href="${pageContext.request.contextPath}/login" class="btn btn-outline-light btn-sm">
                             <i class="bi bi-box-arrow-in-right me-1"></i>Login
+                        </a>
+                        <a href="${pageContext.request.contextPath}/register" class="btn btn-primary btn-sm">
+                            <i class="bi bi-person-plus-fill me-1"></i>Sign Up
                         </a>
                     </c:otherwise>
                 </c:choose>

@@ -7,6 +7,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,6 +39,53 @@ public class UserDAO {
             DBUtil.close(conn, ps, rs);
         }
         return null;
+    }
+
+    public boolean isEmailTaken(String email) {
+        String sql = "SELECT 1 FROM users WHERE LOWER(email) = LOWER(?)";
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            conn = DBUtil.getConnection();
+            ps = conn.prepareStatement(sql);
+            ps.setString(1, email.trim());
+            rs = ps.executeQuery();
+            return rs.next();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DBUtil.close(conn, ps, rs);
+        }
+        return false;
+    }
+
+    public boolean registerUser(User user) {
+        String sql = "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)";
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            conn = DBUtil.getConnection();
+            ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            ps.setString(1, user.getName().trim());
+            ps.setString(2, user.getEmail().trim().toLowerCase());
+            ps.setString(3, user.getPassword());
+            ps.setString(4, user.getRole() != null ? user.getRole().toUpperCase() : "USER");
+            int affected = ps.executeUpdate();
+            if (affected > 0) {
+                rs = ps.getGeneratedKeys();
+                if (rs != null && rs.next()) {
+                    user.setUserId(rs.getInt(1));
+                }
+                return true;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DBUtil.close(conn, ps, rs);
+        }
+        return false;
     }
 
     public User findById(int userId) {
