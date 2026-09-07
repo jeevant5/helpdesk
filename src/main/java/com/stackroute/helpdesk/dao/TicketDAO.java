@@ -18,7 +18,7 @@ public class TicketDAO {
         ResultSet rs = null;
         try {
             conn = DBUtil.getConnection();
-            ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            ps = conn.prepareStatement(sql, new String[] { "TICKET_ID" });
             ps.setInt(1, ticket.getUserId());
             ps.setString(2, ticket.getTitle());
             ps.setString(3, ticket.getDescription());

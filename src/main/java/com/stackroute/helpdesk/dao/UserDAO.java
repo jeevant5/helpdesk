@@ -67,7 +67,7 @@ public class UserDAO {
         ResultSet rs = null;
         try {
             conn = DBUtil.getConnection();
-            ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            ps = conn.prepareStatement(sql, new String[] { "USER_ID" });
             ps.setString(1, user.getName().trim());
             ps.setString(2, user.getEmail().trim().toLowerCase());
             ps.setString(3, user.getPassword());

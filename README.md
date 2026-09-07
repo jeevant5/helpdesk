@@ -2,6 +2,8 @@
 
 A centralized, secure, and scalable Java EE / Jakarta-compatible web application developed for the StackRoute Capstone Project to automate logging, tracking, technician assignment, and resolution of IT support requests.
 
+![Project Flow](docs/helpdesk_project_flow.jpg)
+
 ---
 
 ## 1. Features & Checkpoints Implemented

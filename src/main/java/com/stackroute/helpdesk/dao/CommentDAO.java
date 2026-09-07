@@ -16,7 +16,7 @@ public class CommentDAO {
         ResultSet rs = null;
         try {
             conn = DBUtil.getConnection();
-            ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            ps = conn.prepareStatement(sql, new String[] { "COMMENT_ID" });
             ps.setInt(1, comment.getTicketId());
             ps.setInt(2, comment.getAuthorId());
             ps.setString(3, comment.getCommentText());
