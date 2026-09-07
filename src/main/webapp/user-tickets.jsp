@@ -17,9 +17,11 @@
         </h3>
         <p class="text-muted small mb-0">Track and monitor real-time resolution status of helpdesk inquiries.</p>
     </div>
-    <a href="${pageContext.request.contextPath}/submit-ticket" class="btn btn-primary">
-        <i class="bi bi-plus-lg me-1"></i>New Ticket
-    </a>
+    <c:if test="${not sessionScope.user.technician}">
+        <a href="${pageContext.request.contextPath}/submit-ticket" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>New Ticket
+        </a>
+    </c:if>
 </div>
 
 <c:if test="${param.error eq 'unauthorized'}">
@@ -119,7 +121,14 @@
                             <tr>
                                 <td colspan="8" class="text-center py-5 text-muted">
                                     <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                                    No tickets found. <a href="${pageContext.request.contextPath}/submit-ticket">Create a new ticket</a> to get started.
+                                    <c:choose>
+                                        <c:when test="${sessionScope.user.technician}">
+                                            No tickets submitted in the system yet. Incoming user requests will appear here.
+                                        </c:when>
+                                        <c:otherwise>
+                                            No tickets found. <a href="${pageContext.request.contextPath}/submit-ticket">Create a new ticket</a> to get started.
+                                        </c:otherwise>
+                                    </c:choose>
                                 </td>
                             </tr>
                         </c:otherwise>
