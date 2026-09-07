@@ -12,11 +12,15 @@
         <a href="${pageContext.request.contextPath}/tech-dashboard" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-arrow-clockwise me-1"></i>Refresh Data
         </a>
-        <a href="${pageContext.request.contextPath}/submit-ticket" class="btn btn-primary btn-sm">
-            <i class="bi bi-plus-lg me-1"></i>Create Ticket
-        </a>
     </div>
 </div>
+
+<c:if test="${param.error eq 'unauthorized_create'}">
+    <div class="alert alert-warning alert-dismissible fade show py-2" role="alert">
+        <i class="bi bi-shield-lock-fill me-2"></i>Technicians resolve support tickets and cannot open new tickets. Please use an End-User account to submit requests.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+</c:if>
 
 <c:if test="${param.msg eq 'assigned'}">
     <div class="alert alert-success alert-dismissible fade show py-2" role="alert">

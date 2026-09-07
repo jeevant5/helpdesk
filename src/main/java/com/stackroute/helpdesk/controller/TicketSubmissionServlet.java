@@ -34,6 +34,11 @@ public class TicketSubmissionServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
+        User currentUser = (User) session.getAttribute("user");
+        if (currentUser.isTechnician()) {
+            response.sendRedirect(request.getContextPath() + "/tech-dashboard?error=unauthorized_create");
+            return;
+        }
         request.getRequestDispatcher("/submit-ticket.jsp").forward(request, response);
     }
 
@@ -47,6 +52,10 @@ public class TicketSubmissionServlet extends HttpServlet {
         }
 
         User currentUser = (User) session.getAttribute("user");
+        if (currentUser.isTechnician()) {
+            response.sendRedirect(request.getContextPath() + "/tech-dashboard?error=unauthorized_create");
+            return;
+        }
         String title = request.getParameter("title");
         String description = request.getParameter("description");
         String priority = request.getParameter("priority");

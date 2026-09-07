@@ -75,23 +75,32 @@
         <div class="collapse navbar-collapse" id="navMenu">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <c:if test="${not empty sessionScope.user}">
-                    <li class="nav-item">
-                        <a class="nav-link" href="${pageContext.request.contextPath}/tickets">
-                            <i class="bi bi-ticket-detailed me-1"></i>My Tickets
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="${pageContext.request.contextPath}/submit-ticket">
-                            <i class="bi bi-plus-circle me-1"></i>New Ticket
-                        </a>
-                    </li>
-                    <c:if test="${sessionScope.user.technician}">
-                        <li class="nav-item">
-                            <a class="nav-link active text-warning" href="${pageContext.request.contextPath}/tech-dashboard">
-                                <i class="bi bi-speedometer2 me-1"></i>Technician Dashboard
-                            </a>
-                        </li>
-                    </c:if>
+                    <c:choose>
+                        <c:when test="${sessionScope.user.technician}">
+                            <li class="nav-item">
+                                <a class="nav-link active text-warning" href="${pageContext.request.contextPath}/tech-dashboard">
+                                    <i class="bi bi-speedometer2 me-1"></i>Technician Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="${pageContext.request.contextPath}/tickets">
+                                    <i class="bi bi-card-list me-1"></i>All Tickets
+                                </a>
+                            </li>
+                        </c:when>
+                        <c:otherwise>
+                            <li class="nav-item">
+                                <a class="nav-link" href="${pageContext.request.contextPath}/tickets">
+                                    <i class="bi bi-ticket-detailed me-1"></i>My Tickets
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="${pageContext.request.contextPath}/submit-ticket">
+                                    <i class="bi bi-plus-circle me-1"></i>New Ticket
+                                </a>
+                            </li>
+                        </c:otherwise>
+                    </c:choose>
                 </c:if>
             </ul>
             <div class="d-flex align-items-center gap-3">
