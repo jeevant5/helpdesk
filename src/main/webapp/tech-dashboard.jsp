@@ -9,6 +9,9 @@
         <p class="text-muted small mb-0">Real-time aggregate ticket metrics, unassigned queue, and technician work log.</p>
     </div>
     <div class="d-flex gap-2">
+        <a href="${pageContext.request.contextPath}/export-tickets" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-filetype-csv me-1"></i>Export All (CSV)
+        </a>
         <a href="${pageContext.request.contextPath}/tech-dashboard" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-arrow-clockwise me-1"></i>Refresh Data
         </a>
@@ -106,6 +109,7 @@
                         <th>Subject</th>
                         <th>Priority</th>
                         <th>Status</th>
+                        <th>SLA Status</th>
                         <th>Reported By</th>
                         <th>Logged At</th>
                         <th class="text-end pe-4">Action</th>
@@ -140,6 +144,11 @@
                                     </td>
                                     <td><span class="badge badge-status-open">${t.status}</span></td>
                                     <td>
+                                        <span class="${t.slaBadgeClass} px-2 py-1 small">
+                                            <i class="bi bi-clock-history me-1"></i>${t.slaStatusText}
+                                        </span>
+                                    </td>
+                                    <td>
                                         <div>${t.userName}</div>
                                         <div class="small text-muted">${t.userEmail}</div>
                                     </td>
@@ -159,7 +168,7 @@
                         </c:when>
                         <c:otherwise>
                             <tr>
-                                <td colspan="7" class="text-center py-4 text-muted">
+                                <td colspan="8" class="text-center py-4 text-muted">
                                     <i class="bi bi-check-all text-success fs-3 d-block mb-1"></i>
                                     All tickets have been claimed! No pending unassigned tickets.
                                 </td>
@@ -187,6 +196,7 @@
                         <th>Subject</th>
                         <th>Priority</th>
                         <th>Status</th>
+                        <th>SLA Status</th>
                         <th>User</th>
                         <th>Logged At</th>
                         <th class="text-end pe-4">Actions</th>
@@ -213,6 +223,11 @@
                                             ${t.status}
                                         </span>
                                     </td>
+                                    <td>
+                                        <span class="${t.slaBadgeClass} px-2 py-1 small">
+                                            <i class="bi bi-clock-history me-1"></i>${t.slaStatusText}
+                                        </span>
+                                    </td>
                                     <td>${t.userName}</td>
                                     <td class="small text-muted">
                                         <fmt:formatDate value="${t.createdAt}" pattern="yyyy-MM-dd HH:mm" />
@@ -227,7 +242,7 @@
                         </c:when>
                         <c:otherwise>
                             <tr>
-                                <td colspan="7" class="text-center py-4 text-muted">
+                                <td colspan="8" class="text-center py-4 text-muted">
                                     You currently have no tickets assigned to you. Claim an unassigned ticket from the queue above.
                                 </td>
                             </tr>

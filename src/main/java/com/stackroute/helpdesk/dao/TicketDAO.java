@@ -296,6 +296,66 @@ public class TicketDAO {
         return false;
     }
 
+    public List<Ticket> searchTickets(String keyword, String status, String priority, Integer userId, boolean isTech) {
+        List<Ticket> list = new ArrayList<>();
+        StringBuilder sql = new StringBuilder(
+            "SELECT t.ticket_id, t.user_id, t.tech_id, t.title, t.description, t.priority, t.status, " +
+            "t.attachment_name, t.attachment_type, " +
+            "CASE WHEN t.attachment IS NOT NULL THEN 1 ELSE 0 END AS has_attachment, t.created_at, " +
+            "u.name AS user_name, u.email AS user_email, tech.name AS tech_name " +
+            "FROM tickets t " +
+            "JOIN users u ON t.user_id = u.user_id " +
+            "LEFT JOIN users tech ON t.tech_id = tech.user_id " +
+            "WHERE 1=1 "
+        );
+
+        List<Object> params = new ArrayList<>();
+
+        if (!isTech) {
+            sql.append("AND t.user_id = ? ");
+            params.add(userId != null ? userId : -1);
+        }
+
+        if (status != null && !status.trim().isEmpty() && !status.equalsIgnoreCase("ALL")) {
+            sql.append("AND UPPER(t.status) = ? ");
+            params.add(status.trim().toUpperCase());
+        }
+
+        if (priority != null && !priority.trim().isEmpty() && !priority.equalsIgnoreCase("ALL")) {
+            sql.append("AND UPPER(t.priority) = ? ");
+            params.add(priority.trim().toUpperCase());
+        }
+
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            sql.append("AND (LOWER(t.title) LIKE ? OR LOWER(t.description) LIKE ?) ");
+            String term = "%" + keyword.trim().toLowerCase() + "%";
+            params.add(term);
+            params.add(term);
+        }
+
+        sql.append("ORDER BY t.created_at DESC");
+
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            conn = DBUtil.getConnection();
+            ps = conn.prepareStatement(sql.toString());
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            rs = ps.executeQuery();
+            while (rs.next()) {
+                list.add(mapResultSetToTicket(rs));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DBUtil.close(conn, ps, rs);
+        }
+        return list;
+    }
+
     private Ticket mapResultSetToTicket(ResultSet rs) throws SQLException {
         Ticket t = new Ticket();
         t.setTicketId(rs.getInt("ticket_id"));

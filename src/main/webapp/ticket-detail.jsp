@@ -6,6 +6,13 @@
 <div class="row g-4">
     <!-- Left Column: Ticket Overview & Discussion Thread -->
     <div class="col-lg-8">
+        <c:if test="${not empty param.feedbackSuccess}">
+            <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i>Thank you! Your feedback has been recorded successfully.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </c:if>
+
         <div class="card p-4 shadow-sm mb-4">
             <div class="d-flex justify-content-between align-items-start mb-3">
                 <div>
@@ -31,6 +38,11 @@
                             <span class="badge badge-status-closed fs-6 px-3 py-2">CLOSED</span>
                         </c:otherwise>
                     </c:choose>
+                    <div class="mt-2">
+                        <span class="${ticket.slaBadgeClass} px-2 py-1 small">
+                            <i class="bi bi-clock-history me-1"></i>${ticket.slaStatusText}
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -135,6 +147,70 @@
                     </div>
                 </form>
             </div>
+
+            <!-- Customer Satisfaction (CSAT) Section -->
+            <c:if test="${ticket.status eq 'RESOLVED' || ticket.status eq 'CLOSED'}">
+                <c:choose>
+                    <c:when test="${not empty feedback}">
+                        <div class="card border border-success-subtle bg-success-subtle bg-opacity-10 p-4 rounded-3 mt-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="fw-bold text-success mb-0">
+                                    <i class="bi bi-star-fill text-warning me-2"></i>Customer Satisfaction Feedback
+                                </h6>
+                                <span class="small text-muted">
+                                    Submitted on <fmt:formatDate value="${feedback.createdAt}" pattern="yyyy-MM-dd HH:mm" />
+                                </span>
+                            </div>
+                            <div class="my-2">
+                                <span class="fw-semibold me-2">Rating:</span>
+                                <c:forEach begin="1" end="${feedback.rating}">
+                                    <i class="bi bi-star-fill text-warning fs-5"></i>
+                                </c:forEach>
+                                <c:forEach begin="${feedback.rating + 1}" end="5">
+                                    <i class="bi bi-star text-secondary fs-5"></i>
+                                </c:forEach>
+                                <span class="badge bg-secondary ms-2">${feedback.rating} / 5</span>
+                            </div>
+                            <c:if test="${not empty feedback.notes}">
+                                <div class="mt-2 p-2 bg-white rounded border border-light-subtle">
+                                    <span class="small text-muted d-block fw-semibold mb-1">User Feedback:</span>
+                                    <div class="text-secondary" style="white-space: pre-wrap;">${feedback.notes}</div>
+                                </div>
+                            </c:if>
+                        </div>
+                    </c:when>
+                    <c:when test="${sessionScope.user.userId eq ticket.userId}">
+                        <div class="card border border-warning-subtle bg-warning-subtle bg-opacity-10 p-4 rounded-3 mt-4">
+                            <h6 class="fw-bold text-dark mb-1">
+                                <i class="bi bi-patch-check-fill text-warning me-2"></i>Rate Your Support Experience
+                            </h6>
+                            <p class="small text-muted mb-3">This ticket is marked as ${ticket.status}. Please let us know how satisfied you were with the resolution.</p>
+                            
+                            <form action="${pageContext.request.contextPath}/submit-feedback" method="post">
+                                <input type="hidden" name="ticketId" value="${ticket.ticketId}">
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold">Satisfaction Rating (1 = Poor, 5 = Excellent):</label>
+                                    <div class="d-flex gap-3 align-items-center">
+                                        <c:forEach begin="1" end="5" var="score">
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input" type="radio" name="rating" id="rating${score}" value="${score}" ${score eq 5 ? 'checked' : ''} required>
+                                                <label class="form-check-label fw-bold" for="rating${score}">${score} <i class="bi bi-star-fill text-warning small"></i></label>
+                                            </div>
+                                        </c:forEach>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="feedbackNotes" class="form-label small fw-semibold">Additional Comments / Review (Optional):</label>
+                                    <textarea class="form-control bg-white" id="feedbackNotes" name="notes" rows="2" placeholder="Tell us how the technician did..."></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-warning fw-semibold px-4">
+                                    <i class="bi bi-check-circle me-1"></i>Submit Feedback
+                                </button>
+                            </form>
+                        </div>
+                    </c:when>
+                </c:choose>
+            </c:if>
         </div>
     </div>
 
@@ -149,6 +225,18 @@
                 <span class="badge ${ticket.priority eq 'HIGH' ? 'badge-priority-high' : (ticket.priority eq 'MEDIUM' ? 'badge-priority-medium' : 'badge-priority-low')} fs-6 mt-1">
                     ${ticket.priority} PRIORITY
                 </span>
+            </div>
+
+            <div class="mb-3">
+                <span class="text-muted small d-block">SLA Target Resolution:</span>
+                <div class="mt-1">
+                    <span class="${ticket.slaBadgeClass} px-2 py-1 small">
+                        <i class="bi bi-clock-history me-1"></i>${ticket.slaStatusText}
+                    </span>
+                </div>
+                <div class="small text-muted mt-1">
+                    Window: ${ticket.slaHours} hours from creation
+                </div>
             </div>
 
             <div class="mb-3">

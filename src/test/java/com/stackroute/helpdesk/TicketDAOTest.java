@@ -149,12 +149,16 @@ public class TicketDAOTest {
     public void testUserAndTechnicianRegistration() {
         // Test checking existing email
         assertTrue(userDAO.isEmailTaken("john@example.com"), "John's email should be taken");
-        assertFalse(userDAO.isEmailTaken("newtech@company.com"), "New email should not be taken");
+        
+        long ts = System.currentTimeMillis();
+        String techEmail = "tech_" + ts + "@company.com";
+        String userEmail = "user_" + ts + "@company.com";
+        assertFalse(userDAO.isEmailTaken(techEmail), "New email should not be taken");
 
         // Test registering a new Technician
         User newTech = new User();
         newTech.setName("Marcus Vance");
-        newTech.setEmail("marcus.vance@company.com");
+        newTech.setEmail(techEmail);
         newTech.setPassword("securePass123");
         newTech.setRole("TECHNICIAN");
 
@@ -163,7 +167,7 @@ public class TicketDAOTest {
         assertTrue(newTech.getUserId() > 0, "Generated user ID should be positive");
 
         // Verify login with newly registered technician
-        User authenticated = userDAO.authenticate("marcus.vance@company.com", "securePass123");
+        User authenticated = userDAO.authenticate(techEmail, "securePass123");
         assertNotNull(authenticated);
         assertEquals("Marcus Vance", authenticated.getName());
         assertTrue(authenticated.isTechnician(), "Should have technician privileges");
@@ -171,13 +175,107 @@ public class TicketDAOTest {
         // Test registering a new End-User
         User newUser = new User();
         newUser.setName("Emily Rose");
-        newUser.setEmail("emily.rose@company.com");
+        newUser.setEmail(userEmail);
         newUser.setPassword("userPass456");
         newUser.setRole("USER");
 
         assertTrue(userDAO.registerUser(newUser));
-        User authUser = userDAO.authenticate("emily.rose@company.com", "userPass456");
+        User authUser = userDAO.authenticate(userEmail, "userPass456");
         assertNotNull(authUser);
         assertFalse(authUser.isTechnician());
+    }
+
+    @Test
+    @Order(7)
+    public void testPasswordResetDAO() {
+        com.stackroute.helpdesk.dao.PasswordResetDAO resetDAO = new com.stackroute.helpdesk.dao.PasswordResetDAO();
+        
+        // Find seeded user
+        User user = userDAO.findByEmail("john@example.com");
+        assertNotNull(user, "User john should exist");
+
+        // Create token
+        String token = java.util.UUID.randomUUID().toString();
+        java.sql.Timestamp expiry = new java.sql.Timestamp(System.currentTimeMillis() + 30 * 60 * 1000);
+        boolean created = resetDAO.createResetToken(user.getUserId(), token, expiry);
+        assertTrue(created, "Reset token should be saved to database");
+
+        // Validate token
+        Integer validUserId = resetDAO.getUserIdByValidToken(token);
+        assertNotNull(validUserId, "Token should validate");
+        assertEquals(user.getUserId(), validUserId.intValue());
+
+        // Reset password
+        boolean passUpdated = resetDAO.updatePassword(validUserId, "newSecret999");
+        assertTrue(passUpdated, "Password update should succeed");
+        resetDAO.markTokenUsed(token);
+
+        // Verify login with new password
+        User newAuth = userDAO.authenticate("john@example.com", "newSecret999");
+        assertNotNull(newAuth, "Should authenticate with new password");
+
+        // Token should now be invalid (marked used)
+        assertNull(resetDAO.getUserIdByValidToken(token), "Used token should no longer validate");
+
+        // Restore original password
+        resetDAO.updatePassword(user.getUserId(), "user123");
+    }
+
+    @Test
+    @Order(8)
+    public void testFeedbackDAO() {
+        com.stackroute.helpdesk.dao.FeedbackDAO feedbackDAO = new com.stackroute.helpdesk.dao.FeedbackDAO();
+        
+        com.stackroute.helpdesk.model.TicketFeedback feedback = new com.stackroute.helpdesk.model.TicketFeedback();
+        feedback.setTicketId(createdTicketId);
+        feedback.setRating(5);
+        feedback.setNotes("Great fast resolution on the VPN issue!");
+
+        boolean saved = feedbackDAO.addFeedback(feedback);
+        assertTrue(saved, "Feedback should be saved successfully");
+
+        com.stackroute.helpdesk.model.TicketFeedback retrieved = feedbackDAO.getFeedbackByTicketId(createdTicketId);
+        assertNotNull(retrieved, "Feedback should be retrievable");
+        assertEquals(5, retrieved.getRating());
+        assertEquals("Great fast resolution on the VPN issue!", retrieved.getNotes());
+    }
+
+    @Test
+    @Order(9)
+    public void testTicketSearchAndFiltering() {
+        // Search by keyword "VPN" as technician
+        List<Ticket> results = ticketDAO.searchTickets("VPN", "ALL", "ALL", 0, true);
+        assertFalse(results.isEmpty(), "Search should find tickets matching 'VPN'");
+        assertTrue(results.stream().anyMatch(t -> t.getTicketId() == createdTicketId));
+
+        // Filter by status RESOLVED
+        List<Ticket> resolvedList = ticketDAO.searchTickets(null, "RESOLVED", "ALL", 0, true);
+        assertFalse(resolvedList.isEmpty());
+        assertTrue(resolvedList.stream().allMatch(t -> "RESOLVED".equals(t.getStatus())));
+
+        // Filter by user ID as non-tech
+        List<Ticket> userTickets = ticketDAO.searchTickets(null, "ALL", "HIGH", 1, false);
+        assertFalse(userTickets.isEmpty());
+        assertTrue(userTickets.stream().allMatch(t -> t.getUserId() == 1));
+    }
+
+    @Test
+    @Order(10)
+    public void testSlaCalculations() {
+        Ticket highTicket = new Ticket();
+        highTicket.setPriority("HIGH");
+        highTicket.setCreatedAt(new java.sql.Timestamp(System.currentTimeMillis() - 1000L * 60 * 60 * 5)); // 5 hours ago
+        assertEquals(4, highTicket.getSlaHours());
+        assertTrue(highTicket.isSlaBreached(), "5 hours > 4 hours SLA should be breached");
+        assertTrue(highTicket.getSlaStatusText().startsWith("SLA Breached"));
+        assertEquals("badge bg-danger", highTicket.getSlaBadgeClass());
+
+        Ticket lowTicket = new Ticket();
+        lowTicket.setPriority("LOW");
+        lowTicket.setCreatedAt(new java.sql.Timestamp(System.currentTimeMillis())); // now
+        assertEquals(72, lowTicket.getSlaHours());
+        assertFalse(lowTicket.isSlaBreached());
+        assertTrue(lowTicket.getSlaStatusText().contains("left"));
+        assertEquals("badge bg-success", lowTicket.getSlaBadgeClass());
     }
 }

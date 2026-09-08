@@ -1,85 +1,71 @@
 package com.stackroute.helpdesk.controller;
 
-import com.stackroute.helpdesk.dao.UserDAO;
+import com.stackroute.helpdesk.dto.UserRegistrationDTO;
 import com.stackroute.helpdesk.model.User;
-
+import com.stackroute.helpdesk.service.UserService;
+import com.stackroute.helpdesk.service.impl.UserServiceImpl;
+import com.stackroute.helpdesk.util.ServiceResult;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+
 import java.io.IOException;
 
 @WebServlet("/register")
 public class RegisterServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
-    private UserDAO userDAO = new UserDAO();
+    private final UserService userService = new UserServiceImpl();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
-        HttpSession session = request.getSession(false);
-        if (session != null && session.getAttribute("user") != null) {
-            User user = (User) session.getAttribute("user");
-            if (user.isTechnician()) {
-                response.sendRedirect(request.getContextPath() + "/tech-dashboard");
-            } else {
-                response.sendRedirect(request.getContextPath() + "/tickets");
-            }
-            return;
-        }
+        request.getSession(true);
         request.getRequestDispatcher("/register.jsp").forward(request, response);
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
-        String name = request.getParameter("name");
-        String email = request.getParameter("email");
-        String password = request.getParameter("password");
-        String role = request.getParameter("role");
+        HttpSession session = request.getSession(false);
+        String sessionCaptcha = (session != null) ? (String) session.getAttribute("CAPTCHA_CODE") : null;
 
-        if (name == null || email == null || password == null || 
-            name.trim().isEmpty() || email.trim().isEmpty() || password.trim().isEmpty()) {
-            request.setAttribute("errorMessage", "All fields are required.");
-            request.getRequestDispatcher("/register.jsp").forward(request, response);
-            return;
-        }
+        UserRegistrationDTO dto = new UserRegistrationDTO(
+            request.getParameter("name"),
+            request.getParameter("email"),
+            request.getParameter("password"),
+            request.getParameter("role"),
+            request.getParameter("captcha"),
+            sessionCaptcha,
+            request.getParameter("securityQuestion"),
+            request.getParameter("securityAnswer")
+        );
 
-        name = name.trim();
-        email = email.trim().toLowerCase();
-        password = password.trim();
-        if (role == null || (!role.equalsIgnoreCase("TECHNICIAN") && !role.equalsIgnoreCase("USER"))) {
-            role = "USER";
-        } else {
-            role = role.trim().toUpperCase();
-        }
-
-        if (userDAO.isEmailTaken(email)) {
-            request.setAttribute("errorMessage", "Email is already registered. Please sign in or use another email.");
-            request.getRequestDispatcher("/register.jsp").forward(request, response);
-            return;
-        }
-
-        User newUser = new User();
-        newUser.setName(name);
-        newUser.setEmail(email);
-        newUser.setPassword(password);
-        newUser.setRole(role);
-
-        boolean success = userDAO.registerUser(newUser);
-        if (success && newUser.getUserId() > 0) {
-            HttpSession session = request.getSession(true);
-            session.setAttribute("user", newUser);
-
-            if (newUser.isTechnician()) {
-                response.sendRedirect(request.getContextPath() + "/tech-dashboard?msg=registered");
-            } else {
-                response.sendRedirect(request.getContextPath() + "/tickets?msg=registered");
+        ServiceResult<User> result = userService.register(dto);
+        if (result instanceof ServiceResult.Success<User> success) {
+            User user = success.data();
+            // Invalidate any existing session and establish fresh authenticated session
+            if (session != null) {
+                session.invalidate();
             }
+            HttpSession newSession = request.getSession(true);
+            newSession.setAttribute("user", user);
+
+            String redirectUrl = request.getContextPath() + 
+                (user.isTechnician() ? "/tech-dashboard?msg=registered" : "/tickets?msg=registered");
+            response.sendRedirect(redirectUrl);
         } else {
-            request.setAttribute("errorMessage", "Registration failed due to a database error. Please try again.");
+            if (session != null) {
+                session.removeAttribute("CAPTCHA_CODE");
+            }
+            request.setAttribute("errorMessage", result.getMessage());
+            request.setAttribute("name", dto.name());
+            request.setAttribute("email", dto.email());
+            request.setAttribute("selectedRole", dto.role());
+            request.setAttribute("selectedQuestion", dto.securityQuestion());
+            request.setAttribute("securityAnswer", dto.securityAnswer());
             request.getRequestDispatcher("/register.jsp").forward(request, response);
         }
     }

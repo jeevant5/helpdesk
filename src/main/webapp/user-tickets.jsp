@@ -29,6 +29,56 @@
         <i class="bi bi-shield-exclamation me-2"></i>Technician privileges are required to access that dashboard.
     </div>
 </c:if>
+<c:if test="${param.error eq 'unauthorized_ticket'}">
+    <div class="alert alert-danger py-2" role="alert">
+        <i class="bi bi-shield-lock-fill me-2"></i>Access Denied: You are not authorized to view other users' tickets.
+    </div>
+</c:if>
+
+<!-- Search and Filter Bar -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body p-3">
+        <form method="get" action="${pageContext.request.contextPath}/tickets" class="row g-2 align-items-center">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" name="search" placeholder="Search title or description..." value="${searchKeyword}">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="input-group">
+                    <label class="input-group-text bg-light small fw-semibold">Status</label>
+                    <select class="form-select" name="status">
+                        <option value="ALL" ${empty selectedStatus || selectedStatus eq 'ALL' ? 'selected' : ''}>All Statuses</option>
+                        <option value="OPEN" ${selectedStatus eq 'OPEN' ? 'selected' : ''}>Open</option>
+                        <option value="IN_PROGRESS" ${selectedStatus eq 'IN_PROGRESS' ? 'selected' : ''}>In Progress</option>
+                        <option value="RESOLVED" ${selectedStatus eq 'RESOLVED' ? 'selected' : ''}>Resolved</option>
+                        <option value="CLOSED" ${selectedStatus eq 'CLOSED' ? 'selected' : ''}>Closed</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="input-group">
+                    <label class="input-group-text bg-light small fw-semibold">Priority</label>
+                    <select class="form-select" name="priority">
+                        <option value="ALL" ${empty selectedPriority || selectedPriority eq 'ALL' ? 'selected' : ''}>All</option>
+                        <option value="HIGH" ${selectedPriority eq 'HIGH' ? 'selected' : ''}>High</option>
+                        <option value="MEDIUM" ${selectedPriority eq 'MEDIUM' ? 'selected' : ''}>Medium</option>
+                        <option value="LOW" ${selectedPriority eq 'LOW' ? 'selected' : ''}>Low</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-3 d-flex gap-2 justify-content-md-end">
+                <button type="submit" class="btn btn-primary px-3">
+                    <i class="bi bi-funnel-fill me-1"></i>Filter
+                </button>
+                <a href="${pageContext.request.contextPath}/tickets" class="btn btn-outline-secondary" title="Reset Filters">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
 
 <div class="card shadow-sm">
     <div class="card-body p-0">
@@ -40,7 +90,10 @@
                         <th>Title</th>
                         <th>Priority</th>
                         <th>Status</th>
-                        <th>Created By</th>
+                        <th>SLA Status</th>
+                        <c:if test="${sessionScope.user.technician}">
+                            <th>Created By</th>
+                        </c:if>
                         <th>Assigned Technician</th>
                         <th>Created Date</th>
                         <th class="text-end pe-4">Actions</th>
@@ -92,8 +145,15 @@
                                         </c:choose>
                                     </td>
                                     <td>
-                                        <span class="small text-muted">${t.userName}</span>
+                                        <span class="${t.slaBadgeClass} px-2 py-1 small">
+                                            <i class="bi bi-clock-history me-1"></i>${t.slaStatusText}
+                                        </span>
                                     </td>
+                                    <c:if test="${sessionScope.user.technician}">
+                                        <td>
+                                            <span class="small text-muted">${t.userName}</span>
+                                        </td>
+                                    </c:if>
                                     <td>
                                         <c:choose>
                                             <c:when test="${not empty t.techName}">
@@ -119,11 +179,11 @@
                         </c:when>
                         <c:otherwise>
                             <tr>
-                                <td colspan="8" class="text-center py-5 text-muted">
+                                <td colspan="${sessionScope.user.technician ? 9 : 8}" class="text-center py-5 text-muted">
                                     <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                                     <c:choose>
                                         <c:when test="${sessionScope.user.technician}">
-                                            No tickets submitted in the system yet. Incoming user requests will appear here.
+                                            No tickets found matching your criteria.
                                         </c:when>
                                         <c:otherwise>
                                             No tickets found. <a href="${pageContext.request.contextPath}/submit-ticket">Create a new ticket</a> to get started.

@@ -1,4 +1,4 @@
-﻿-- Oracle DDL for Helpdesk Ticket Resolution System
+-- Oracle DDL for Helpdesk Ticket Resolution System
 -- Compatible with Oracle Database 12c, 19c, 21c, 23c
 
 -- Drop tables if they exist
@@ -26,7 +26,9 @@ CREATE TABLE users (
     name VARCHAR2(100) NOT NULL,
     email VARCHAR2(120) UNIQUE NOT NULL,
     password VARCHAR2(100) NOT NULL,
-    role VARCHAR2(20) DEFAULT 'USER' CHECK (role IN ('USER', 'TECHNICIAN', 'ADMIN'))
+    role VARCHAR2(20) DEFAULT 'USER' CHECK (role IN ('USER', 'TECHNICIAN', 'ADMIN')),
+    security_question VARCHAR2(255),
+    security_answer VARCHAR2(255)
 );
 
 -- 2. Tickets table (with BLOB attachment support)

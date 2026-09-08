@@ -1,8 +1,20 @@
 package com.stackroute.helpdesk.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.io.Serializable;
 import java.sql.Timestamp;
 
+/**
+ * Domain entity representing an IT support ticket with SLA resolution tracking.
+ */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Ticket implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -18,52 +30,63 @@ public class Ticket implements Serializable {
     private boolean hasAttachment;
     private Timestamp createdAt;
 
-    // Additional display fields for UI joining
+    // Additional display projections for UI table joins
     private String userName;
     private String userEmail;
     private String techName;
 
-    public Ticket() {}
+    // --- SLA Calculation & Performance Indicators ---
+    public int getSlaHours() {
+        if ("HIGH".equalsIgnoreCase(this.priority)) return 4;
+        if ("MEDIUM".equalsIgnoreCase(this.priority)) return 24;
+        return 72; // LOW priority
+    }
 
-    public int getTicketId() { return ticketId; }
-    public void setTicketId(int ticketId) { this.ticketId = ticketId; }
+    public long getSlaDeadlineMillis() {
+        if (createdAt == null) return System.currentTimeMillis();
+        return createdAt.getTime() + (getSlaHours() * 3600L * 1000L);
+    }
 
-    public int getUserId() { return userId; }
-    public void setUserId(int userId) { this.userId = userId; }
+    public boolean isSlaBreached() {
+        if ("RESOLVED".equalsIgnoreCase(this.status) || "CLOSED".equalsIgnoreCase(this.status)) {
+            return false;
+        }
+        return System.currentTimeMillis() > getSlaDeadlineMillis();
+    }
 
-    public Integer getTechId() { return techId; }
-    public void setTechId(Integer techId) { this.techId = techId; }
+    public String getSlaStatusText() {
+        if ("RESOLVED".equalsIgnoreCase(this.status) || "CLOSED".equalsIgnoreCase(this.status)) {
+            return "Resolved";
+        }
+        long now = System.currentTimeMillis();
+        long deadline = getSlaDeadlineMillis();
+        long diffMillis = Math.abs(deadline - now);
 
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
+        long hours = diffMillis / (3600L * 1000L);
+        long minutes = (diffMillis % (3600L * 1000L)) / (60L * 1000L);
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+        if (now > deadline) {
+            return "SLA Breached (" + hours + "h " + minutes + "m overdue)";
+        } else {
+            return "SLA: " + hours + "h " + minutes + "m left";
+        }
+    }
 
-    public String getPriority() { return priority; }
-    public void setPriority(String priority) { this.priority = priority; }
+    public String getSlaTimeRemaining() {
+        return getSlaStatusText();
+    }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-
-    public String getAttachmentName() { return attachmentName; }
-    public void setAttachmentName(String attachmentName) { this.attachmentName = attachmentName; }
-
-    public String getAttachmentType() { return attachmentType; }
-    public void setAttachmentType(String attachmentType) { this.attachmentType = attachmentType; }
-
-    public boolean isHasAttachment() { return hasAttachment; }
-    public void setHasAttachment(boolean hasAttachment) { this.hasAttachment = hasAttachment; }
-
-    public Timestamp getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Timestamp createdAt) { this.createdAt = createdAt; }
-
-    public String getUserName() { return userName; }
-    public void setUserName(String userName) { this.userName = userName; }
-
-    public String getUserEmail() { return userEmail; }
-    public void setUserEmail(String userEmail) { this.userEmail = userEmail; }
-
-    public String getTechName() { return techName; }
-    public void setTechName(String techName) { this.techName = techName; }
+    public String getSlaBadgeClass() {
+        if ("RESOLVED".equalsIgnoreCase(this.status) || "CLOSED".equalsIgnoreCase(this.status)) {
+            return "badge bg-secondary";
+        }
+        if (isSlaBreached()) {
+            return "badge bg-danger";
+        }
+        long hoursLeft = (getSlaDeadlineMillis() - System.currentTimeMillis()) / (3600L * 1000L);
+        if (hoursLeft <= 2) {
+            return "badge bg-warning text-dark";
+        }
+        return "badge bg-success";
+    }
 }

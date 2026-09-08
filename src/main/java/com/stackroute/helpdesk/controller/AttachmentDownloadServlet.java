@@ -1,61 +1,78 @@
 package com.stackroute.helpdesk.controller;
 
-import com.stackroute.helpdesk.dao.TicketDAO;
 import com.stackroute.helpdesk.model.Ticket;
-
+import com.stackroute.helpdesk.model.User;
+import com.stackroute.helpdesk.service.TicketService;
+import com.stackroute.helpdesk.service.impl.TicketServiceImpl;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import java.io.IOException;
 
-@WebServlet("/attachment")
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Optional;
+
+@WebServlet("/download-attachment")
 public class AttachmentDownloadServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
-    private TicketDAO ticketDAO = new TicketDAO();
+    private final TicketService ticketService = new TicketServiceImpl();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
-        HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("user") == null) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-            return;
-        }
-
-        String idStr = request.getParameter("id");
-        if (idStr == null) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing ticket id");
+        String ticketIdStr = request.getParameter("id");
+        if (ticketIdStr == null || ticketIdStr.isBlank()) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Ticket ID is required.");
             return;
         }
 
         try {
-            int ticketId = Integer.parseInt(idStr);
-            Ticket ticket = ticketDAO.getTicketById(ticketId);
-            if (ticket == null || !ticket.isHasAttachment()) {
-                response.sendError(HttpServletResponse.SC_NOT_FOUND, "Attachment not found");
+            int ticketId = Integer.parseInt(ticketIdStr.trim());
+            Optional<Ticket> ticketOpt = ticketService.getTicketById(ticketId);
+
+            if (ticketOpt.isEmpty()) {
+                response.sendError(HttpServletResponse.SC_NOT_FOUND, "Ticket not found for #" + ticketId);
                 return;
             }
 
-            String fileName = ticket.getAttachmentName() != null ? ticket.getAttachmentName() : "attachment.bin";
+            Ticket ticket = ticketOpt.get();
+
+            HttpSession session = request.getSession(false);
+            User currentUser = (session != null) ? (User) session.getAttribute("user") : null;
+
+            if (currentUser == null) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Please sign in to download attachments.");
+                return;
+            }
+
+            // Strict privacy: Regular users cannot download attachments of other users' tickets
+            if (!currentUser.isTechnician() && ticket.getUserId() != currentUser.getUserId()) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied: You cannot download attachments for other users' tickets.");
+                return;
+            }
+
+            if (!ticket.isHasAttachment()) {
+                response.sendError(HttpServletResponse.SC_NOT_FOUND, "Attachment not found for ticket #" + ticketId);
+                return;
+            }
+
             String contentType = ticket.getAttachmentType() != null ? ticket.getAttachmentType() : "application/octet-stream";
+            String fileName = ticket.getAttachmentName() != null ? ticket.getAttachmentName() : "attachment";
 
             response.setContentType(contentType);
-            // If image or text, display inline; else prompt download
-            if (contentType.startsWith("image/") || contentType.startsWith("text/")) {
-                response.setHeader("Content-Disposition", "inline; filename=\"" + fileName + "\"");
-            } else {
-                response.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
-            }
+            response.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
 
-            boolean written = ticketDAO.writeAttachment(ticketId, response.getOutputStream());
-            if (!written) {
-                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            try (OutputStream out = response.getOutputStream()) {
+                boolean success = ticketService.writeAttachment(ticketId, out);
+                if (!success) {
+                    response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Could not stream BLOB attachment.");
+                }
             }
         } catch (NumberFormatException e) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid ticket ID format.");
         }
     }
 }

@@ -25,6 +25,12 @@
                 </div>
             </c:if>
 
+            <c:if test="${param.msg eq 'password_updated'}">
+                <div class="alert alert-success py-2" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i>Your password has been reset successfully. Please log in.
+                </div>
+            </c:if>
+
             <form action="${pageContext.request.contextPath}/login" method="post" id="loginForm">
                 <div class="mb-3">
                     <label for="email" class="form-label fw-semibold">Email address</label>
@@ -35,8 +41,11 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="password" class="form-label fw-semibold">Password</label>
-                    <div class="input-group">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <label for="password" class="form-label fw-semibold mb-0">Password</label>
+                        <a href="${pageContext.request.contextPath}/forgot-password" class="small text-decoration-none text-primary">Forgot Password?</a>
+                    </div>
+                    <div class="input-group mt-1">
                         <span class="input-group-text"><i class="bi bi-key"></i></span>
                         <input type="password" class="form-control" id="password" name="password" required placeholder="Password" value="tech123">
                     </div>
