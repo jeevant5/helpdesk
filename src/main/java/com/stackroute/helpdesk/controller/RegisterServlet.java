@@ -36,7 +36,7 @@ public class RegisterServlet extends HttpServlet {
             request.getParameter("name"),
             request.getParameter("email"),
             request.getParameter("password"),
-            request.getParameter("role"),
+            "USER",
             request.getParameter("captcha"),
             sessionCaptcha,
             request.getParameter("securityQuestion"),
@@ -53,9 +53,7 @@ public class RegisterServlet extends HttpServlet {
             HttpSession newSession = request.getSession(true);
             newSession.setAttribute("user", user);
 
-            String redirectUrl = request.getContextPath() + 
-                (user.isTechnician() ? "/tech-dashboard?msg=registered" : "/tickets?msg=registered");
-            response.sendRedirect(redirectUrl);
+            response.sendRedirect(request.getContextPath() + "/tickets?msg=registered");
         } else {
             if (session != null) {
                 session.removeAttribute("CAPTCHA_CODE");
@@ -63,7 +61,6 @@ public class RegisterServlet extends HttpServlet {
             request.setAttribute("errorMessage", result.getMessage());
             request.setAttribute("name", dto.name());
             request.setAttribute("email", dto.email());
-            request.setAttribute("selectedRole", dto.role());
             request.setAttribute("selectedQuestion", dto.securityQuestion());
             request.setAttribute("securityAnswer", dto.securityAnswer());
             request.getRequestDispatcher("/register.jsp").forward(request, response);

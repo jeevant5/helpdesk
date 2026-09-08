@@ -13,6 +13,10 @@ public record UserRegistrationDTO(
     String securityQuestion,
     String securityAnswer
 ) {
+    public UserRegistrationDTO {
+        role = (role != null && !role.isBlank()) ? role.trim().toUpperCase() : "USER";
+    }
+
     public UserRegistrationDTO(String name, String email, String password, String role, String captchaInput, String sessionCaptcha) {
         this(name, email, password, role, captchaInput, sessionCaptcha, "What was the name of your first pet?", "fluffy");
     }

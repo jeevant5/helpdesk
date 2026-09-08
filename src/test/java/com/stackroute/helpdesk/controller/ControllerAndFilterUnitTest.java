@@ -121,6 +121,27 @@ public class ControllerAndFilterUnitTest {
     }
 
     @Test
+    @DisplayName("RegisterServlet - POST successful registration creates USER account and redirects to tickets")
+    public void testRegisterServletDoPostSuccess() throws Exception {
+        when(request.getSession(false)).thenReturn(session);
+        when(session.getAttribute("CAPTCHA_CODE")).thenReturn("VALID");
+        String testEmail = "new_user_" + System.currentTimeMillis() + "@company.com";
+        when(request.getParameter("name")).thenReturn("Fresh User");
+        when(request.getParameter("email")).thenReturn(testEmail);
+        when(request.getParameter("password")).thenReturn("freshPass123");
+        when(request.getParameter("captcha")).thenReturn("VALID");
+        when(request.getParameter("securityQuestion")).thenReturn("What was the name of your first pet?");
+        when(request.getParameter("securityAnswer")).thenReturn("fluffy");
+        when(request.getSession(true)).thenReturn(session);
+        when(request.getContextPath()).thenReturn("/helpdesk");
+
+        RegisterServlet servlet = new RegisterServlet();
+        servlet.doPost(request, response);
+
+        verify(response).sendRedirect("/helpdesk/tickets?msg=registered");
+    }
+
+    @Test
     @DisplayName("ForgotPasswordServlet - POST missing/invalid captcha handles error")
     public void testForgotPasswordServletBadCaptcha() throws Exception {
         when(request.getParameter("email")).thenReturn("john@example.com");

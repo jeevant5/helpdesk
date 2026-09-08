@@ -54,28 +54,6 @@
                     </div>
                 </div>
 
-                <div class="mb-4">
-                    <label class="form-label fw-semibold d-block">Account Type <span class="text-danger">*</span></label>
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <input type="radio" class="btn-check" name="role" id="roleUser" value="USER" ${empty selectedRole or selectedRole eq 'USER' ? 'checked' : ''}>
-                            <label class="btn btn-outline-primary w-100 py-2 d-flex flex-column align-items-center" for="roleUser">
-                                <i class="bi bi-person fs-4 mb-1"></i>
-                                <span class="fw-bold">End-User</span>
-                                <small class="text-muted" style="font-size: 0.75rem;">Submit & Track</small>
-                            </label>
-                        </div>
-                        <div class="col-6">
-                            <input type="radio" class="btn-check" name="role" id="roleTech" value="TECHNICIAN" ${selectedRole eq 'TECHNICIAN' ? 'checked' : ''}>
-                            <label class="btn btn-outline-warning w-100 py-2 d-flex flex-column align-items-center" for="roleTech">
-                                <i class="bi bi-tools fs-4 mb-1"></i>
-                                <span class="fw-bold">Technician</span>
-                                <small class="text-muted" style="font-size: 0.75rem;">Resolve & Manage</small>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Password Recovery Security Question -->
                 <div class="card p-3 mb-4 bg-light border">
                     <h6 class="fw-bold mb-2 text-primary">

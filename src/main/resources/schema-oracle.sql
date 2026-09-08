@@ -64,6 +64,7 @@ INSERT INTO users (name, email, password, role) VALUES ('John Doe', 'john@exampl
 INSERT INTO users (name, email, password, role) VALUES ('Jane Smith', 'jane@example.com', 'user123', 'USER');
 INSERT INTO users (name, email, password, role) VALUES ('Alex Tech', 'alex.tech@company.com', 'tech123', 'TECHNICIAN');
 INSERT INTO users (name, email, password, role) VALUES ('Sarah Tech', 'sarah.tech@company.com', 'tech123', 'TECHNICIAN');
+INSERT INTO users (name, email, password, role) VALUES ('Mike Ross', 'mike.tech@company.com', 'tech123', 'TECHNICIAN');
 INSERT INTO users (name, email, password, role) VALUES ('IT Admin', 'admin@company.com', 'admin123', 'ADMIN');
 
 COMMIT;
