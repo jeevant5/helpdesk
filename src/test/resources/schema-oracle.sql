@@ -1,4 +1,4 @@
-﻿-- Oracle DDL for Helpdesk Ticket Resolution System
+-- Oracle DDL for Helpdesk Ticket Resolution System
 -- Compatible with Oracle Database 12c, 19c, 21c, 23c
 
 -- Drop tables if they exist
@@ -60,8 +60,9 @@ CREATE TABLE ticket_comments (
 -- Seed Data: Sample Users & Technicians
 INSERT INTO users (name, email, password, role) VALUES ('John Doe', 'john@example.com', 'user123', 'USER');
 INSERT INTO users (name, email, password, role) VALUES ('Jane Smith', 'jane@example.com', 'user123', 'USER');
-INSERT INTO users (name, email, password, role) VALUES ('Alex Tech', 'alex.tech@company.com', 'tech123', 'TECHNICIAN');
-INSERT INTO users (name, email, password, role) VALUES ('Sarah Tech', 'sarah.tech@company.com', 'tech123', 'TECHNICIAN');
+INSERT INTO users (name, email, password, role) VALUES ('Bhavani', 'bhavani.tech@company.com', 'tech123', 'TECHNICIAN');
+INSERT INTO users (name, email, password, role) VALUES ('Nithya', 'nithya.tech@company.com', 'tech123', 'TECHNICIAN');
+INSERT INTO users (name, email, password, role) VALUES ('Jeevan', 'jeevan.tech@company.com', 'tech123', 'TECHNICIAN');
 INSERT INTO users (name, email, password, role) VALUES ('IT Admin', 'admin@company.com', 'admin123', 'ADMIN');
 
 COMMIT;

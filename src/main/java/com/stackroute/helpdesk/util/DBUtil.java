@@ -62,17 +62,21 @@ public class DBUtil {
             // Seed default security question and answer for users with empty values
             try {
                 stmt.execute("UPDATE users SET security_question = 'What was the name of your first pet?', security_answer = 'fluffy' WHERE security_question IS NULL OR security_answer IS NULL");
-                stmt.execute("UPDATE users SET password = 'user123' WHERE LOWER(email) = 'john@example.com'");
+                // Migrate any legacy technician accounts to the 3 designated technicians
+                stmt.execute("UPDATE users SET name = 'Bhavani', email = 'bhavani.tech@company.com', password = 'tech123', role = 'TECHNICIAN' WHERE LOWER(email) = 'alex.tech@company.com'");
+                stmt.execute("UPDATE users SET name = 'Nithya', email = 'nithya.tech@company.com', password = 'tech123', role = 'TECHNICIAN' WHERE LOWER(email) = 'sarah.tech@company.com'");
+                stmt.execute("UPDATE users SET name = 'Jeevan', email = 'jeevan.tech@company.com', password = 'tech123', role = 'TECHNICIAN' WHERE LOWER(email) = 'mike.tech@company.com'");
+
                 // Ensure the 3 standard IT Support Technicians exist with known credentials
-                String[] techEmails = {"alex.tech@company.com", "sarah.tech@company.com", "mike.tech@company.com"};
-                String[] techNames = {"Alex Turner", "Sarah Jenkins", "Mike Ross"};
+                String[] techEmails = {"bhavani.tech@company.com", "nithya.tech@company.com", "jeevan.tech@company.com"};
+                String[] techNames = {"Bhavani", "Nithya", "Jeevan"};
                 for (int i = 0; i < techEmails.length; i++) {
                     try (ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM users WHERE LOWER(email) = '" + techEmails[i] + "'")) {
                         if (rs.next() && rs.getInt(1) == 0) {
                             stmt.execute("INSERT INTO users (name, email, password, role, security_question, security_answer) " +
                                 "VALUES ('" + techNames[i] + "', '" + techEmails[i] + "', 'tech123', 'TECHNICIAN', 'What was the name of your first pet?', 'fluffy')");
                         } else {
-                            stmt.execute("UPDATE users SET password = 'tech123', role = 'TECHNICIAN' WHERE LOWER(email) = '" + techEmails[i] + "'");
+                            stmt.execute("UPDATE users SET name = '" + techNames[i] + "', password = 'tech123', role = 'TECHNICIAN' WHERE LOWER(email) = '" + techEmails[i] + "'");
                         }
                     }
                 }

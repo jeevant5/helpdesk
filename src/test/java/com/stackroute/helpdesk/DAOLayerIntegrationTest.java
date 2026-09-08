@@ -118,7 +118,7 @@ public class DAOLayerIntegrationTest {
         // CommentDAO: Add comment 1
         TicketComment c1 = TicketComment.builder()
             .ticketId(createdTicketId)
-            .authorId(3) // Seeded technician Alex Tech
+            .authorId(3) // Seeded technician Bhavani
             .commentText("Checking radius server authentication logs.")
             .build();
         boolean c1Added = commentDAO.addComment(c1);

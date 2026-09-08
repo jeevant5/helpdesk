@@ -29,8 +29,9 @@ A centralized, secure, and scalable Java EE / Jakarta-compatible web application
 
 | Role | Name | Email | Password |
 |---|---|---|---|
-| **Technician** | Alex Tech | `alex.tech@company.com` | `tech123` |
-| **Technician** | Sarah Tech | `sarah.tech@company.com` | `tech123` |
+| **Technician** | Bhavani | `bhavani.tech@company.com` | `tech123` |
+| **Technician** | Nithya | `nithya.tech@company.com` | `tech123` |
+| **Technician** | Jeevan | `jeevan.tech@company.com` | `tech123` |
 | **User** | John Doe | `john@example.com` | `user123` |
 | **User** | Jane Smith | `jane@example.com` | `user123` |
 | **Admin** | IT Admin | `admin@company.com` | `admin123` |

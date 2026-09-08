@@ -36,7 +36,7 @@
                     <label for="email" class="form-label fw-semibold">Email address</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                        <input type="email" class="form-control" id="email" name="email" required placeholder="name@company.com" value="alex.tech@company.com">
+                        <input type="email" class="form-control" id="email" name="email" required placeholder="name@company.com" value="bhavani.tech@company.com">
                     </div>
                 </div>
 
@@ -70,7 +70,7 @@
             <div class="text-center">
                 <p class="small text-muted mb-2">Quick Demo Accounts (Click to Autofill):</p>
                 <div class="d-flex justify-content-center gap-2">
-                    <button type="button" class="btn btn-outline-warning btn-sm" onclick="setDemo('alex.tech@company.com', 'tech123')">
+                    <button type="button" class="btn btn-outline-warning btn-sm" onclick="setDemo('bhavani.tech@company.com', 'tech123')">
                         <i class="bi bi-wrench-adjustable me-1"></i>Technician Demo
                     </button>
                     <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setDemo('john@example.com', 'user123')">

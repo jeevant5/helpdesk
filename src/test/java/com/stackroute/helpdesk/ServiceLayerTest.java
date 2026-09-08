@@ -186,7 +186,7 @@ public class ServiceLayerTest {
     public void testCommentServiceAndStatusTransition() {
         TicketComment comment = TicketComment.builder()
             .ticketId(testTicketId)
-            .authorId(3) // Alex Tech
+            .authorId(3) // Bhavani
             .commentText("Cleared stuck spooler service and rebooted print server.")
             .build();
 

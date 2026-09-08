@@ -37,9 +37,9 @@ public class TicketDAOTest {
     @Order(1)
     public void testUserAuthentication() {
         // Test seeded user authentication
-        User tech = userDAO.authenticate("alex.tech@company.com", "tech123");
-        assertNotNull(tech, "Technician Alex should authenticate");
-        assertTrue(tech.isTechnician(), "Alex should have technician privileges");
+        User tech = userDAO.authenticate("bhavani.tech@company.com", "tech123");
+        assertNotNull(tech, "Technician Bhavani should authenticate");
+        assertTrue(tech.isTechnician(), "Bhavani should have technician privileges");
 
         User user = userDAO.authenticate("john@example.com", "user123");
         assertNotNull(user, "User John should authenticate");
@@ -96,7 +96,7 @@ public class TicketDAOTest {
     @Order(4)
     public void testTechnicianSelfAssignment() {
         // Requirement: Technicians assign tickets to themselves
-        // Alex Tech user_id = 3
+        // Bhavani user_id = 3
         boolean assigned = ticketDAO.assignTicket(createdTicketId, 3);
         assertTrue(assigned, "Ticket assignment to tech should succeed");
 
@@ -114,7 +114,7 @@ public class TicketDAOTest {
         // 1. Add discussion comment from Tech
         TicketComment techComment = new TicketComment();
         techComment.setTicketId(createdTicketId);
-        techComment.setAuthorId(3); // Alex Tech
+        techComment.setAuthorId(3); // Bhavani
         techComment.setCommentText("Checked firewall logs. Certificate expired on the gateway. Renewing cert now.");
         boolean commentAdded = commentDAO.addComment(techComment);
         assertTrue(commentAdded, "Tech comment should be saved");
@@ -123,13 +123,13 @@ public class TicketDAOTest {
         TicketComment userReply = new TicketComment();
         userReply.setTicketId(createdTicketId);
         userReply.setAuthorId(1); // John Doe
-        userReply.setCommentText("Thanks Alex! Confirmed VPN connected successfully now.");
+        userReply.setCommentText("Thanks Bhavani! Confirmed VPN connected successfully now.");
         commentDAO.addComment(userReply);
 
         // 3. Verify comments in thread
         List<TicketComment> thread = commentDAO.getCommentsByTicketId(createdTicketId);
         assertEquals(2, thread.size(), "Thread should have 2 comments");
-        assertEquals("Alex Tech", thread.get(0).getAuthorName());
+        assertEquals("Bhavani", thread.get(0).getAuthorName());
         assertEquals("John Doe", thread.get(1).getAuthorName());
 
         // 4. Update status dynamically to RESOLVED
