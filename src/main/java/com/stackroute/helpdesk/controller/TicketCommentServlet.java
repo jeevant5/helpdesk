@@ -63,6 +63,16 @@ public class TicketCommentServlet extends HttpServlet {
                     response.sendRedirect(request.getContextPath() + "/ticket-detail?id=" + ticketId + "&error=ticket_closed");
                     return;
                 }
+                newStatus = "NO_CHANGE";
+            }
+
+            // Administrator oversight rule: Admin cannot resolve tickets
+            if (currentUser.isAdmin()) {
+                if ("RESOLVED".equalsIgnoreCase(newStatus)) {
+                    response.sendRedirect(request.getContextPath() + "/ticket-detail?id=" + ticketId + "&error=admin_cannot_resolve");
+                    return;
+                }
+                newStatus = "NO_CHANGE";
             }
 
             TicketComment comment = TicketComment.builder()

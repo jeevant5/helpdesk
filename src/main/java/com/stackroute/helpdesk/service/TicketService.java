@@ -18,6 +18,7 @@ public interface TicketService {
     List<Ticket> getTicketsByCriteria(TicketSearchCriteria criteria);
     List<Ticket> getUnassignedTickets();
     List<Ticket> getTicketsAssignedToTech(int techId);
+    List<Ticket> getAllAssignedTickets();
     TicketStatisticsDTO getTicketStatistics();
     Map<String, Integer> getStatusCounts();
     ServiceResult<Void> assignTicket(int ticketId, int techId);

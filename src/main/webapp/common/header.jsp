@@ -76,7 +76,19 @@
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <c:if test="${not empty sessionScope.user}">
                     <c:choose>
-                        <c:when test="${sessionScope.user.technician}">
+                        <c:when test="${sessionScope.user.admin}">
+                            <li class="nav-item">
+                                <a class="nav-link active text-warning" href="${pageContext.request.contextPath}/tech-dashboard">
+                                    <i class="bi bi-shield-lock me-1"></i>Admin Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="${pageContext.request.contextPath}/tickets">
+                                    <i class="bi bi-card-list me-1"></i>All Tickets
+                                </a>
+                            </li>
+                        </c:when>
+                        <c:when test="${sessionScope.user.role eq 'TECHNICIAN'}">
                             <li class="nav-item">
                                 <a class="nav-link active text-warning" href="${pageContext.request.contextPath}/tech-dashboard">
                                     <i class="bi bi-speedometer2 me-1"></i>Technician Dashboard

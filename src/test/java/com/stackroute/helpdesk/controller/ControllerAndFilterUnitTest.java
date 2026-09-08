@@ -4,10 +4,12 @@ import com.stackroute.helpdesk.dao.TicketDAO;
 import com.stackroute.helpdesk.filter.AuthenticationFilter;
 import com.stackroute.helpdesk.filter.CharacterEncodingFilter;
 import com.stackroute.helpdesk.filter.GlobalExceptionFilter;
+import com.stackroute.helpdesk.dto.TicketStatisticsDTO;
 import com.stackroute.helpdesk.model.Ticket;
 import com.stackroute.helpdesk.model.User;
 import com.stackroute.helpdesk.service.CommentService;
 import com.stackroute.helpdesk.service.TicketService;
+import com.stackroute.helpdesk.service.UserService;
 import com.stackroute.helpdesk.util.DBUtil;
 import com.stackroute.helpdesk.util.ServiceResult;
 import jakarta.servlet.FilterChain;
@@ -28,6 +30,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -534,5 +537,76 @@ public class ControllerAndFilterUnitTest {
 
         verify(response).sendRedirect("/helpdesk/ticket-detail?id=99&error=ticket_closed");
         verify(mockCommService, never()).addComment(any(), any());
+    }
+
+    @Test
+    @DisplayName("TicketCommentServlet - Blocks Admin from resolving tickets")
+    public void testTicketCommentServletDeniedForAdminResolving() throws Exception {
+        User admin = User.builder().userId(5).name("IT Admin").role("ADMIN").build();
+        when(request.getSession(false)).thenReturn(session);
+        when(session.getAttribute("user")).thenReturn(admin);
+        when(request.getParameter("ticketId")).thenReturn("88");
+        when(request.getParameter("commentText")).thenReturn("Admin attempting resolve");
+        when(request.getParameter("newStatus")).thenReturn("RESOLVED");
+        when(request.getContextPath()).thenReturn("/helpdesk");
+
+        CommentService mockCommService = mock(CommentService.class);
+        TicketService mockTicketService = mock(TicketService.class);
+
+        TicketCommentServlet servlet = new TicketCommentServlet(mockCommService, mockTicketService);
+        servlet.doPost(request, response);
+
+        verify(response).sendRedirect("/helpdesk/ticket-detail?id=88&error=admin_cannot_resolve");
+        verify(mockCommService, never()).addComment(any(), any());
+    }
+
+    @Test
+    @DisplayName("TicketAssignServlet - Admin assigns ticket to selected technician")
+    public void testTicketAssignServletAdminAssignsToTechnician() throws Exception {
+        User admin = User.builder().userId(5).name("IT Admin").role("ADMIN").build();
+        when(request.getSession(false)).thenReturn(session);
+        when(session.getAttribute("user")).thenReturn(admin);
+        when(request.getParameter("ticketId")).thenReturn("42");
+        when(request.getParameter("techId")).thenReturn("3");
+        when(request.getContextPath()).thenReturn("/helpdesk");
+
+        TicketService mockTicketService = mock(TicketService.class);
+        when(mockTicketService.assignTicket(42, 3)).thenReturn(ServiceResult.ok(null, "Assigned"));
+
+        TicketAssignServlet servlet = new TicketAssignServlet(mockTicketService);
+        servlet.doPost(request, response);
+
+        verify(mockTicketService).assignTicket(42, 3);
+        verify(response).sendRedirect("/helpdesk/tech-dashboard?msg=assigned");
+    }
+
+    @Test
+    @DisplayName("TechnicianDashboardServlet - Admin views aggregate metrics and all assigned tickets")
+    public void testTechnicianDashboardServletAdminOversight() throws Exception {
+        User admin = User.builder().userId(5).name("IT Admin").role("ADMIN").build();
+        when(request.getSession(false)).thenReturn(session);
+        when(session.getAttribute("user")).thenReturn(admin);
+        when(request.getRequestDispatcher("/tech-dashboard.jsp")).thenReturn(dispatcher);
+
+        TicketService mockTicketService = mock(TicketService.class);
+        UserService mockUserService = mock(UserService.class);
+
+        TicketStatisticsDTO stats = new TicketStatisticsDTO(10, 4, 3, 2, 1, 0, 2);
+        when(mockTicketService.getTicketStatistics()).thenReturn(stats);
+        when(mockTicketService.getUnassignedTickets()).thenReturn(List.of());
+        when(mockTicketService.getAllAssignedTickets()).thenReturn(List.of(
+            Ticket.builder().ticketId(1).techId(3).techName("Bhavani").status("IN_PROGRESS").build()
+        ));
+        when(mockUserService.getAvailableTechnicians()).thenReturn(List.of(
+            User.builder().userId(3).name("Bhavani").role("TECHNICIAN").build()
+        ));
+
+        TechnicianDashboardServlet servlet = new TechnicianDashboardServlet(mockTicketService, mockUserService);
+        servlet.doGet(request, response);
+
+        verify(mockTicketService).getAllAssignedTickets();
+        verify(request).setAttribute(eq("resolvedCount"), eq(2L));
+        verify(request).setAttribute(eq("totalTickets"), eq(10L));
+        verify(dispatcher).forward(request, response);
     }
 }

@@ -96,6 +96,14 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
+    public List<Ticket> getAllAssignedTickets() {
+        return ticketDAO.getAllTickets().stream()
+            .filter(t -> t.getTechId() != null)
+            .sorted(Comparator.comparingLong(Ticket::getSlaDeadlineMillis))
+            .collect(Collectors.toList());
+    }
+
+    @Override
     public TicketStatisticsDTO getTicketStatistics() {
         List<Ticket> allTickets = ticketDAO.getAllTickets();
 

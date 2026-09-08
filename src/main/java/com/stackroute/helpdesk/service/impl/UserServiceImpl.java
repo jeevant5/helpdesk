@@ -91,4 +91,11 @@ public class UserServiceImpl implements UserService {
         if (email == null || email.isBlank()) return false;
         return userDAO.isEmailTaken(email.trim().toLowerCase());
     }
+
+    @Override
+    public java.util.List<User> getAvailableTechnicians() {
+        return userDAO.getAllTechnicians().stream()
+            .filter(u -> "TECHNICIAN".equalsIgnoreCase(u.getRole()))
+            .collect(java.util.stream.Collectors.toList());
+    }
 }

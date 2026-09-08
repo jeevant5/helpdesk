@@ -4,6 +4,7 @@ import com.stackroute.helpdesk.dto.UserRegistrationDTO;
 import com.stackroute.helpdesk.model.User;
 import com.stackroute.helpdesk.util.ServiceResult;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface UserService {
@@ -11,4 +12,5 @@ public interface UserService {
     ServiceResult<User> register(UserRegistrationDTO dto);
     Optional<User> findByEmail(String email);
     boolean isEmailTaken(String email);
+    List<User> getAvailableTechnicians();
 }

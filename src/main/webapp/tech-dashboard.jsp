@@ -5,8 +5,16 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h2 class="fw-bold mb-1"><i class="bi bi-speedometer2 text-warning me-2"></i>Technician Command Center</h2>
-        <p class="text-muted small mb-0">Real-time aggregate ticket metrics, unassigned queue, and technician work log.</p>
+        <c:choose>
+            <c:when test="${sessionScope.user.admin}">
+                <h2 class="fw-bold mb-1"><i class="bi bi-shield-lock-fill text-primary me-2"></i>Administrator Command Center</h2>
+                <p class="text-muted small mb-0">System oversight: Real-time ticket volume, resolution statistics, technician assignments, and system management.</p>
+            </c:when>
+            <c:otherwise>
+                <h2 class="fw-bold mb-1"><i class="bi bi-speedometer2 text-warning me-2"></i>Technician Command Center</h2>
+                <p class="text-muted small mb-0">Real-time aggregate ticket metrics, unassigned queue, and technician work log.</p>
+            </c:otherwise>
+        </c:choose>
     </div>
     <div class="d-flex gap-2">
         <c:if test="${sessionScope.user.admin}">
@@ -32,7 +40,7 @@
 
 <c:if test="${param.msg eq 'assigned'}">
     <div class="alert alert-success alert-dismissible fade show py-2" role="alert">
-        <i class="bi bi-check-circle-fill me-2"></i>Ticket successfully claimed and assigned to you!
+        <i class="bi bi-check-circle-fill me-2"></i>Ticket successfully assigned to technician!
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 </c:if>
@@ -59,72 +67,88 @@
 </c:if>
 
 <!-- Real-time Summary Cards using Aggregate Queries (COUNT(*) GROUP BY status) -->
-<div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
-        <div class="card stat-card bg-primary text-white p-3">
+<div class="row row-cols-2 row-cols-md-5 g-3 mb-4">
+    <div class="col">
+        <div class="card stat-card bg-primary text-white p-3 h-100">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <span class="text-uppercase small fw-semibold opacity-75">Open Tickets</span>
                     <h2 class="fw-bold mb-0 mt-1">${openCount}</h2>
                 </div>
-                <div class="bg-white bg-opacity-25 rounded-circle p-3">
-                    <i class="bi bi-envelope-open fs-3"></i>
+                <div class="bg-white bg-opacity-25 rounded-circle p-2 p-md-3">
+                    <i class="bi bi-envelope-open fs-4"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="col-6 col-md-3">
-        <div class="card stat-card bg-warning text-dark p-3">
+    <div class="col">
+        <div class="card stat-card bg-warning text-dark p-3 h-100">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <span class="text-uppercase small fw-semibold opacity-75">In Progress</span>
                     <h2 class="fw-bold mb-0 mt-1">${inProgressCount}</h2>
                 </div>
-                <div class="bg-dark bg-opacity-10 rounded-circle p-3">
-                    <i class="bi bi-gear-wide-connected fs-3"></i>
+                <div class="bg-dark bg-opacity-10 rounded-circle p-2 p-md-3">
+                    <i class="bi bi-gear-wide-connected fs-4"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="col-6 col-md-3">
-        <div class="card stat-card bg-success text-white p-3">
+    <div class="col">
+        <div class="card stat-card bg-success text-white p-3 h-100">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <span class="text-uppercase small fw-semibold opacity-75">Resolved</span>
                     <h2 class="fw-bold mb-0 mt-1">${resolvedCount}</h2>
                 </div>
-                <div class="bg-white bg-opacity-25 rounded-circle p-3">
-                    <i class="bi bi-check2-circle fs-3"></i>
+                <div class="bg-white bg-opacity-25 rounded-circle p-2 p-md-3">
+                    <i class="bi bi-check2-circle fs-4"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="col-6 col-md-3">
-        <div class="card stat-card bg-secondary text-white p-3">
+    <div class="col">
+        <div class="card stat-card bg-secondary text-white p-3 h-100">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-uppercase small fw-semibold opacity-75">Closed</span>
+                    <h2 class="fw-bold mb-0 mt-1">${closedCount}</h2>
+                </div>
+                <div class="bg-white bg-opacity-25 rounded-circle p-2 p-md-3">
+                    <i class="bi bi-archive-fill fs-4"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col">
+        <div class="card stat-card bg-dark text-white p-3 h-100">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <span class="text-uppercase small fw-semibold opacity-75">Total Volume</span>
                     <h2 class="fw-bold mb-0 mt-1">${totalTickets}</h2>
                 </div>
-                <div class="bg-white bg-opacity-25 rounded-circle p-3">
-                    <i class="bi bi-stack fs-3"></i>
+                <div class="bg-white bg-opacity-25 rounded-circle p-2 p-md-3">
+                    <i class="bi bi-stack fs-4"></i>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Unassigned Queue (Technicians assign tickets to themselves) -->
+<!-- Unassigned Queue (Admin assigns to techs, Techs claim tickets) -->
 <div class="card shadow-sm mb-4">
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center gap-2">
             <span class="badge bg-danger rounded-pill">${unassignedTickets.size()}</span>
-            <h5 class="fw-bold mb-0">Unassigned Ticket Queue (Ready to Claim)</h5>
+            <h5 class="fw-bold mb-0">Unassigned Ticket Queue</h5>
         </div>
-        <span class="small text-muted">Claim tickets to begin resolution</span>
+        <span class="small text-muted">
+            ${sessionScope.user.admin ? 'Assign tickets to available technicians' : 'Claim tickets to begin resolution'}
+        </span>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -138,7 +162,7 @@
                         <th>SLA Status</th>
                         <th>Reported By</th>
                         <th>Logged At</th>
-                        <th class="text-end pe-4">Action</th>
+                        <th class="text-end pe-4">${sessionScope.user.admin ? 'Assign Technician' : 'Action'}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -182,22 +206,38 @@
                                         <fmt:formatDate value="${t.createdAt}" pattern="yyyy-MM-dd HH:mm" />
                                     </td>
                                     <td class="text-end pe-4">
-                                        <div class="d-inline-flex gap-1">
-                                            <form action="${pageContext.request.contextPath}/assign-ticket" method="post" class="d-inline">
-                                                <input type="hidden" name="ticketId" value="${t.ticketId}">
-                                                <button type="submit" class="btn btn-warning btn-sm fw-semibold">
-                                                    <i class="bi bi-person-plus-fill me-1"></i>Assign to Me
-                                                </button>
-                                            </form>
-                                            <c:if test="${sessionScope.user.admin}">
-                                                <form action="${pageContext.request.contextPath}/ticket-delete" method="post" class="d-inline" onsubmit="return confirm('Permanently delete ticket #${t.ticketId}?');">
-                                                    <input type="hidden" name="action" value="deleteSingle">
-                                                    <input type="hidden" name="ticketId" value="${t.ticketId}">
-                                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete Ticket">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
-                                                </form>
-                                            </c:if>
+                                        <div class="d-inline-flex gap-1 align-items-center">
+                                            <c:choose>
+                                                <c:when test="${sessionScope.user.admin}">
+                                                    <form action="${pageContext.request.contextPath}/assign-ticket" method="post" class="d-inline-flex gap-1 align-items-center">
+                                                        <input type="hidden" name="ticketId" value="${t.ticketId}">
+                                                        <select name="techId" class="form-select form-select-sm" required style="min-width: 140px;">
+                                                            <option value="" disabled selected>Assign Tech...</option>
+                                                            <c:forEach var="tech" items="${technicians}">
+                                                                <option value="${tech.userId}">${tech.name}</option>
+                                                            </c:forEach>
+                                                        </select>
+                                                        <button type="submit" class="btn btn-primary btn-sm fw-semibold" title="Assign to Technician">
+                                                            <i class="bi bi-person-check-fill me-1"></i>Assign
+                                                        </button>
+                                                    </form>
+                                                    <form action="${pageContext.request.contextPath}/ticket-delete" method="post" class="d-inline" onsubmit="return confirm('Permanently delete ticket #${t.ticketId}?');">
+                                                        <input type="hidden" name="action" value="deleteSingle">
+                                                        <input type="hidden" name="ticketId" value="${t.ticketId}">
+                                                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete Ticket">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <form action="${pageContext.request.contextPath}/assign-ticket" method="post" class="d-inline">
+                                                        <input type="hidden" name="ticketId" value="${t.ticketId}">
+                                                        <button type="submit" class="btn btn-warning btn-sm fw-semibold">
+                                                            <i class="bi bi-person-plus-fill me-1"></i>Assign to Me
+                                                        </button>
+                                                    </form>
+                                                </c:otherwise>
+                                            </c:choose>
                                         </div>
                                     </td>
                                 </tr>
@@ -218,11 +258,19 @@
     </div>
 </div>
 
-<!-- My Assigned Tickets Section -->
+<!-- Assigned Tickets Section -->
 <div class="card shadow-sm">
     <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-        <h5 class="fw-bold mb-0"><i class="bi bi-person-badge text-primary me-2"></i>My Active Assignments (${myAssignedTickets.size()})</h5>
-        <span class="small text-muted">Tickets assigned to ${sessionScope.user.name}</span>
+        <c:choose>
+            <c:when test="${sessionScope.user.admin}">
+                <h5 class="fw-bold mb-0"><i class="bi bi-people-fill text-primary me-2"></i>All Assigned Tickets by Technician (${assignedTickets.size()})</h5>
+                <span class="small text-muted">Real-time technician assignments and resolution status</span>
+            </c:when>
+            <c:otherwise>
+                <h5 class="fw-bold mb-0"><i class="bi bi-person-badge text-primary me-2"></i>My Active Assignments (${myAssignedTickets.size()})</h5>
+                <span class="small text-muted">Tickets assigned to ${sessionScope.user.name}</span>
+            </c:otherwise>
+        </c:choose>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -231,6 +279,9 @@
                     <tr>
                         <th class="ps-4">ID</th>
                         <th>Subject</th>
+                        <c:if test="${sessionScope.user.admin}">
+                            <th>Assigned Technician</th>
+                        </c:if>
                         <th>Priority</th>
                         <th>Status</th>
                         <th>SLA Status</th>
@@ -241,8 +292,8 @@
                 </thead>
                 <tbody>
                     <c:choose>
-                        <c:when test="${not empty myAssignedTickets}">
-                            <c:forEach var="t" items="${myAssignedTickets}">
+                        <c:when test="${not empty assignedTickets}">
+                            <c:forEach var="t" items="${assignedTickets}">
                                 <tr>
                                     <td class="ps-4 fw-bold">#${t.ticketId}</td>
                                     <td>
@@ -250,13 +301,27 @@
                                             ${t.title}
                                         </a>
                                     </td>
+                                    <c:if test="${sessionScope.user.admin}">
+                                        <td>
+                                            <c:choose>
+                                                <c:when test="${not empty t.techName}">
+                                                    <span class="badge bg-light text-dark border px-2 py-1">
+                                                        <i class="bi bi-person-badge-fill text-primary me-1"></i>${t.techName}
+                                                    </span>
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <span class="badge bg-light text-muted border">Unassigned</span>
+                                                </c:otherwise>
+                                            </c:choose>
+                                        </td>
+                                    </c:if>
                                     <td>
                                         <span class="badge ${t.priority eq 'HIGH' ? 'badge-priority-high' : (t.priority eq 'MEDIUM' ? 'badge-priority-medium' : 'badge-priority-low')}">
                                             ${t.priority}
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="badge ${t.status eq 'OPEN' ? 'badge-status-open' : (t.status eq 'IN_PROGRESS' ? 'badge-status-in_progress' : 'badge-status-resolved')}">
+                                        <span class="badge ${t.status eq 'OPEN' ? 'badge-status-open' : (t.status eq 'IN_PROGRESS' ? 'badge-status-in_progress' : (t.status eq 'RESOLVED' ? 'badge-status-resolved' : 'badge-status-closed'))}">
                                             ${t.status}
                                         </span>
                                     </td>
@@ -272,7 +337,7 @@
                                     <td class="text-end pe-4">
                                         <div class="d-inline-flex gap-1">
                                             <c:choose>
-                                                <c:when test="${t.status eq 'RESOLVED' || t.status eq 'CLOSED'}">
+                                                <c:when test="${sessionScope.user.admin || t.status eq 'RESOLVED' || t.status eq 'CLOSED'}">
                                                     <a href="${pageContext.request.contextPath}/ticket-detail?id=${t.ticketId}" class="btn btn-outline-secondary btn-sm">
                                                         View Details <i class="bi bi-arrow-right ms-1"></i>
                                                     </a>
@@ -299,8 +364,15 @@
                         </c:when>
                         <c:otherwise>
                             <tr>
-                                <td colspan="8" class="text-center py-4 text-muted">
-                                    You currently have no tickets assigned to you. Claim an unassigned ticket from the queue above.
+                                <td colspan="${sessionScope.user.admin ? 9 : 8}" class="text-center py-4 text-muted">
+                                    <c:choose>
+                                        <c:when test="${sessionScope.user.admin}">
+                                            No assigned tickets found. Use the unassigned queue above to assign tickets to technicians.
+                                        </c:when>
+                                        <c:otherwise>
+                                            You currently have no tickets assigned to you. Claim an unassigned ticket from the queue above.
+                                        </c:otherwise>
+                                    </c:choose>
                                 </td>
                             </tr>
                         </c:otherwise>

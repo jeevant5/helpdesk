@@ -17,6 +17,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
+import com.stackroute.helpdesk.service.UserService;
+import com.stackroute.helpdesk.service.impl.UserServiceImpl;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -24,9 +27,22 @@ import java.util.Optional;
 @WebServlet("/ticket-detail")
 public class TicketDetailServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
-    private final TicketService ticketService = new TicketServiceImpl();
-    private final CommentService commentService = new CommentServiceImpl();
-    private final FeedbackService feedbackService = new FeedbackServiceImpl();
+    private final TicketService ticketService;
+    private final CommentService commentService;
+    private final FeedbackService feedbackService;
+    private final UserService userService;
+
+    public TicketDetailServlet() {
+        this(new TicketServiceImpl(), new CommentServiceImpl(), new FeedbackServiceImpl(), new UserServiceImpl());
+    }
+
+    public TicketDetailServlet(TicketService ticketService, CommentService commentService, 
+                               FeedbackService feedbackService, UserService userService) {
+        this.ticketService = ticketService;
+        this.commentService = commentService;
+        this.feedbackService = feedbackService;
+        this.userService = userService;
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
@@ -59,6 +75,11 @@ public class TicketDetailServlet extends HttpServlet {
 
             List<TicketComment> comments = commentService.getCommentsForTicket(ticketId);
             Optional<TicketFeedback> feedbackOpt = feedbackService.getFeedbackForTicket(ticketId);
+
+            if (currentUser != null && currentUser.isAdmin()) {
+                List<User> technicians = userService.getAvailableTechnicians();
+                request.setAttribute("technicians", technicians);
+            }
 
             request.setAttribute("ticket", ticket);
             request.setAttribute("comments", comments);

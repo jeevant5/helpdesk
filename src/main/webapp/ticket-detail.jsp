@@ -89,6 +89,12 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             </c:if>
+            <c:if test="${param.error eq 'admin_cannot_resolve'}">
+                <div class="alert alert-warning alert-dismissible fade show py-2" role="alert">
+                    <i class="bi bi-shield-exclamation me-2"></i>Administrators cannot resolve tickets. Resolution is handled exclusively by assigned technicians.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            </c:if>
 
             <div class="thread-container mb-4">
                 <c:choose>
@@ -138,35 +144,59 @@
                                           placeholder="Type your response, troubleshooting questions, or resolution notes..."></textarea>
                             </div>
 
-                            <div class="row align-items-center g-2">
-                                <div class="col-md-7">
-                                    <div class="input-group">
-                                        <label class="input-group-text bg-white small fw-semibold" for="newStatus">
-                                            <i class="bi bi-arrow-repeat me-1"></i>Change Status:
-                                        </label>
-                                        <select class="form-select" id="newStatus" name="newStatus">
-                                            <option value="NO_CHANGE" selected>-- Keep Current Status (${ticket.status}) --</option>
-                                            <c:if test="${ticket.status ne 'OPEN'}">
-                                                <option value="OPEN">Mark as OPEN</option>
-                                            </c:if>
-                                            <c:if test="${ticket.status ne 'IN_PROGRESS'}">
-                                                <option value="IN_PROGRESS">Mark as IN_PROGRESS</option>
-                                            </c:if>
-                                            <c:if test="${ticket.status ne 'RESOLVED' and ticket.status ne 'CLOSED'}">
-                                                <option value="RESOLVED">Mark as RESOLVED</option>
-                                            </c:if>
-                                            <c:if test="${ticket.status ne 'CLOSED'}">
-                                                <option value="CLOSED">Mark as CLOSED</option>
-                                            </c:if>
-                                        </select>
+                            <c:choose>
+                                <c:when test="${sessionScope.user.admin}">
+                                    <!-- Admin Discussion Note: Admin cannot resolve tickets -->
+                                    <input type="hidden" name="newStatus" value="NO_CHANGE">
+                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                        <span class="small text-muted">
+                                            <i class="bi bi-shield-check text-primary me-1"></i>Administrator Oversight: Post notes or instructions. Resolution is handled by technicians.
+                                        </span>
+                                        <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                                            <i class="bi bi-send-check me-1"></i>Post Administrative Note
+                                        </button>
                                     </div>
-                                </div>
-                                <div class="col-md-5 text-md-end">
-                                    <button type="submit" class="btn btn-primary px-4 fw-semibold w-100 w-md-auto">
-                                        <i class="bi bi-send-check me-1"></i>Post Update
-                                    </button>
-                                </div>
-                            </div>
+                                </c:when>
+                                <c:when test="${sessionScope.user.role eq 'TECHNICIAN'}">
+                                    <div class="row align-items-center g-2">
+                                        <div class="col-md-7">
+                                            <div class="input-group">
+                                                <label class="input-group-text bg-white small fw-semibold" for="newStatus">
+                                                    <i class="bi bi-arrow-repeat me-1"></i>Change Status:
+                                                </label>
+                                                <select class="form-select" id="newStatus" name="newStatus">
+                                                    <option value="NO_CHANGE" selected>-- Keep Current Status (${ticket.status}) --</option>
+                                                    <c:if test="${ticket.status ne 'OPEN'}">
+                                                        <option value="OPEN">Mark as OPEN</option>
+                                                    </c:if>
+                                                    <c:if test="${ticket.status ne 'IN_PROGRESS'}">
+                                                        <option value="IN_PROGRESS">Mark as IN_PROGRESS</option>
+                                                    </c:if>
+                                                    <c:if test="${ticket.status ne 'RESOLVED' and ticket.status ne 'CLOSED'}">
+                                                        <option value="RESOLVED">Mark as RESOLVED</option>
+                                                    </c:if>
+                                                    <c:if test="${ticket.status ne 'CLOSED'}">
+                                                        <option value="CLOSED">Mark as CLOSED</option>
+                                                    </c:if>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-5 text-md-end">
+                                            <button type="submit" class="btn btn-primary px-4 fw-semibold w-100 w-md-auto">
+                                                <i class="bi bi-send-check me-1"></i>Post Update
+                                            </button>
+                                        </div>
+                                    </div>
+                                </c:when>
+                                <c:otherwise>
+                                    <input type="hidden" name="newStatus" value="NO_CHANGE">
+                                    <div class="text-end">
+                                        <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                                            <i class="bi bi-send-check me-1"></i>Post Reply
+                                        </button>
+                                    </div>
+                                </c:otherwise>
+                            </c:choose>
                         </form>
                     </div>
                 </c:otherwise>
@@ -285,18 +315,45 @@
                 </c:choose>
             </div>
 
-            <c:if test="${sessionScope.user.technician}">
-                <hr>
-                <div class="d-grid gap-2">
-                    <form action="${pageContext.request.contextPath}/assign-ticket" method="post">
-                        <input type="hidden" name="ticketId" value="${ticket.ticketId}">
-                        <input type="hidden" name="redirect" value="detail">
-                        <button type="submit" class="btn btn-outline-warning w-100 fw-semibold">
-                            <i class="bi bi-person-plus-fill me-1"></i>Assign to Myself
-                        </button>
-                    </form>
-                </div>
-            </c:if>
+            <c:choose>
+                <c:when test="${sessionScope.user.admin}">
+                    <hr>
+                    <div>
+                        <label class="form-label small fw-semibold text-muted mb-1">
+                            <i class="bi bi-person-gear me-1"></i>Assign / Reassign Technician:
+                        </label>
+                        <form action="${pageContext.request.contextPath}/assign-ticket" method="post">
+                            <input type="hidden" name="ticketId" value="${ticket.ticketId}">
+                            <input type="hidden" name="redirect" value="detail">
+                            <div class="input-group input-group-sm">
+                                <select name="techId" class="form-select" required>
+                                    <option value="" disabled ${empty ticket.techId ? 'selected' : ''}>Select Technician...</option>
+                                    <c:forEach var="tech" items="${technicians}">
+                                        <option value="${tech.userId}" ${ticket.techId eq tech.userId ? 'selected' : ''}>
+                                            ${tech.name}
+                                        </option>
+                                    </c:forEach>
+                                </select>
+                                <button type="submit" class="btn btn-primary fw-semibold">Update</button>
+                            </div>
+                        </form>
+                    </div>
+                </c:when>
+                <c:when test="${sessionScope.user.role eq 'TECHNICIAN'}">
+                    <c:if test="${empty ticket.techId or ticket.techId ne sessionScope.user.userId}">
+                        <hr>
+                        <div class="d-grid gap-2">
+                            <form action="${pageContext.request.contextPath}/assign-ticket" method="post">
+                                <input type="hidden" name="ticketId" value="${ticket.ticketId}">
+                                <input type="hidden" name="redirect" value="detail">
+                                <button type="submit" class="btn btn-outline-warning w-100 fw-semibold">
+                                    <i class="bi bi-person-plus-fill me-1"></i>Assign to Myself
+                                </button>
+                            </form>
+                        </div>
+                    </c:if>
+                </c:when>
+            </c:choose>
         </div>
 
         <!-- Navigation Card -->
