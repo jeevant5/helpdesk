@@ -40,8 +40,8 @@ public class TicketDeleteServlet extends HttpServlet {
         String action = request.getParameter("action");
 
         if ("purgeAll".equalsIgnoreCase(action)) {
-            if (!currentUser.isTechnician() && !currentUser.isAdmin()) {
-                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied: Only technicians or admins can purge tickets.");
+            if (!currentUser.isAdmin()) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied: Only administrators can purge tickets.");
                 return;
             }
 
@@ -55,7 +55,12 @@ public class TicketDeleteServlet extends HttpServlet {
             return;
         }
 
-        // Single ticket deletion
+        // Single ticket deletion - Admin only
+        if (!currentUser.isAdmin()) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied: Only administrators can delete tickets.");
+            return;
+        }
+
         String ticketIdStr = request.getParameter("ticketId");
         if (ticketIdStr == null || ticketIdStr.isBlank()) {
             redirectAfterDelete(request, response, currentUser, false, "invalid_id");

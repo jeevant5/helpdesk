@@ -21,8 +21,17 @@ import java.util.Optional;
 @WebServlet("/ticket-comment")
 public class TicketCommentServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
-    private final CommentService commentService = new CommentServiceImpl();
-    private final TicketService ticketService = new TicketServiceImpl();
+    private final CommentService commentService;
+    private final TicketService ticketService;
+
+    public TicketCommentServlet() {
+        this(new CommentServiceImpl(), new TicketServiceImpl());
+    }
+
+    public TicketCommentServlet(CommentService commentService, TicketService ticketService) {
+        this.commentService = commentService;
+        this.ticketService = ticketService;
+    }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) 
@@ -47,6 +56,11 @@ public class TicketCommentServlet extends HttpServlet {
                 Optional<Ticket> ticketOpt = ticketService.getTicketById(ticketId);
                 if (ticketOpt.isEmpty() || ticketOpt.get().getUserId() != currentUser.getUserId()) {
                     response.sendRedirect(request.getContextPath() + "/tickets?error=unauthorized_ticket");
+                    return;
+                }
+                // Closed ticket: Users cannot talk in the discussion thread after ticket is closed
+                if ("CLOSED".equalsIgnoreCase(ticketOpt.get().getStatus())) {
+                    response.sendRedirect(request.getContextPath() + "/ticket-detail?id=" + ticketId + "&error=ticket_closed");
                     return;
                 }
             }

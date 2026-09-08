@@ -363,11 +363,11 @@ public class ServiceLayerTest {
 
     @Test
     @Order(12)
-    @DisplayName("TicketService - Delete Ticket and Purge Permissions")
+    @DisplayName("TicketService - Delete Ticket and Purge Permissions (Admin Only)")
     public void testTicketServiceDeleteAndPurgePermissions() {
         User regularUser1 = User.builder().userId(1).name("John Doe").role("USER").build();
-        User regularUser2 = User.builder().userId(2).name("Jane Smith").role("USER").build();
         User technician = User.builder().userId(3).name("Bhavani").role("TECHNICIAN").build();
+        User admin = User.builder().userId(5).name("IT Admin").role("ADMIN").build();
 
         Ticket t = Ticket.builder()
             .userId(1)
@@ -379,23 +379,33 @@ public class ServiceLayerTest {
         assertTrue(createResult.isSuccess());
         int ticketId = createResult.getData().orElseThrow().getTicketId();
 
-        // User 2 cannot delete User 1's ticket
-        ServiceResult<Void> forbiddenDelete = ticketService.deleteTicket(ticketId, regularUser2);
-        assertTrue(forbiddenDelete.isFailure());
-        assertEquals("FORBIDDEN", forbiddenDelete.getErrorCode());
+        // Regular user cannot delete ticket
+        ServiceResult<Void> userDelete = ticketService.deleteTicket(ticketId, regularUser1);
+        assertTrue(userDelete.isFailure());
+        assertEquals("FORBIDDEN", userDelete.getErrorCode());
 
-        // Regular user cannot purge all tickets
-        ServiceResult<Integer> forbiddenPurge = ticketService.deleteAllTickets(regularUser1);
-        assertTrue(forbiddenPurge.isFailure());
-        assertEquals("FORBIDDEN", forbiddenPurge.getErrorCode());
+        // Technician cannot delete ticket
+        ServiceResult<Void> techDelete = ticketService.deleteTicket(ticketId, technician);
+        assertTrue(techDelete.isFailure());
+        assertEquals("FORBIDDEN", techDelete.getErrorCode());
 
-        // Owner can delete their own ticket
-        ServiceResult<Void> ownerDelete = ticketService.deleteTicket(ticketId, regularUser1);
-        assertTrue(ownerDelete.isSuccess());
+        // Regular user cannot purge tickets
+        ServiceResult<Integer> userPurge = ticketService.deleteAllTickets(regularUser1);
+        assertTrue(userPurge.isFailure());
+        assertEquals("FORBIDDEN", userPurge.getErrorCode());
+
+        // Technician cannot purge tickets
+        ServiceResult<Integer> techPurge = ticketService.deleteAllTickets(technician);
+        assertTrue(techPurge.isFailure());
+        assertEquals("FORBIDDEN", techPurge.getErrorCode());
+
+        // Admin can delete ticket
+        ServiceResult<Void> adminDelete = ticketService.deleteTicket(ticketId, admin);
+        assertTrue(adminDelete.isSuccess());
         assertTrue(ticketService.getTicketById(ticketId).isEmpty());
 
-        // Technician can purge tickets
-        ServiceResult<Integer> techPurge = ticketService.deleteAllTickets(technician);
-        assertTrue(techPurge.isSuccess());
+        // Admin can purge tickets
+        ServiceResult<Integer> adminPurge = ticketService.deleteAllTickets(admin);
+        assertTrue(adminPurge.isSuccess());
     }
 }

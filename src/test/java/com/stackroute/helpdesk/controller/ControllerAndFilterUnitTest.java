@@ -6,6 +6,7 @@ import com.stackroute.helpdesk.filter.CharacterEncodingFilter;
 import com.stackroute.helpdesk.filter.GlobalExceptionFilter;
 import com.stackroute.helpdesk.model.Ticket;
 import com.stackroute.helpdesk.model.User;
+import com.stackroute.helpdesk.service.CommentService;
 import com.stackroute.helpdesk.service.TicketService;
 import com.stackroute.helpdesk.util.DBUtil;
 import com.stackroute.helpdesk.util.ServiceResult;
@@ -27,6 +28,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -440,30 +442,30 @@ public class ControllerAndFilterUnitTest {
     }
 
     @Test
-    @DisplayName("TicketDeleteServlet - Purge all tickets successfully as technician")
+    @DisplayName("TicketDeleteServlet - Purge all tickets successfully as admin")
     public void testTicketDeleteServletPurgeAllSuccess() throws Exception {
-        User tech = User.builder().userId(3).name("Bhavani").role("TECHNICIAN").build();
+        User admin = User.builder().userId(5).name("IT Admin").role("ADMIN").build();
         when(request.getSession(false)).thenReturn(session);
-        when(session.getAttribute("user")).thenReturn(tech);
+        when(session.getAttribute("user")).thenReturn(admin);
         when(request.getParameter("action")).thenReturn("purgeAll");
         when(request.getContextPath()).thenReturn("/helpdesk");
 
         TicketService mockService = mock(TicketService.class);
-        when(mockService.deleteAllTickets(tech)).thenReturn(ServiceResult.ok(5, "5 tickets purged"));
+        when(mockService.deleteAllTickets(admin)).thenReturn(ServiceResult.ok(5, "5 tickets purged"));
 
         TicketDeleteServlet servlet = new TicketDeleteServlet(mockService);
         servlet.doPost(request, response);
 
-        verify(mockService).deleteAllTickets(tech);
+        verify(mockService).deleteAllTickets(admin);
         verify(response).sendRedirect("/helpdesk/tech-dashboard?msg=all_purged&count=5");
     }
 
     @Test
-    @DisplayName("TicketDeleteServlet - Purge all tickets denied for regular user")
+    @DisplayName("TicketDeleteServlet - Purge all tickets denied for non-admin")
     public void testTicketDeleteServletPurgeAllDeniedForRegularUser() throws Exception {
-        User regularUser = User.builder().userId(1).name("John Doe").role("USER").build();
+        User technician = User.builder().userId(3).name("Bhavani").role("TECHNICIAN").build();
         when(request.getSession(false)).thenReturn(session);
-        when(session.getAttribute("user")).thenReturn(regularUser);
+        when(session.getAttribute("user")).thenReturn(technician);
         when(request.getParameter("action")).thenReturn("purgeAll");
 
         TicketService mockService = mock(TicketService.class);
@@ -476,41 +478,61 @@ public class ControllerAndFilterUnitTest {
     }
 
     @Test
-    @DisplayName("TicketDeleteServlet - Delete single ticket successfully")
+    @DisplayName("TicketDeleteServlet - Delete single ticket successfully as admin")
     public void testTicketDeleteServletDeleteSingleSuccess() throws Exception {
-        User tech = User.builder().userId(3).name("Bhavani").role("TECHNICIAN").build();
+        User admin = User.builder().userId(5).name("IT Admin").role("ADMIN").build();
         when(request.getSession(false)).thenReturn(session);
-        when(session.getAttribute("user")).thenReturn(tech);
+        when(session.getAttribute("user")).thenReturn(admin);
         when(request.getParameter("action")).thenReturn("deleteSingle");
         when(request.getParameter("ticketId")).thenReturn("42");
         when(request.getContextPath()).thenReturn("/helpdesk");
 
         TicketService mockService = mock(TicketService.class);
-        when(mockService.deleteTicket(42, tech)).thenReturn(ServiceResult.ok(null, "Deleted"));
+        when(mockService.deleteTicket(42, admin)).thenReturn(ServiceResult.ok(null, "Deleted"));
 
         TicketDeleteServlet servlet = new TicketDeleteServlet(mockService);
         servlet.doPost(request, response);
 
-        verify(mockService).deleteTicket(42, tech);
+        verify(mockService).deleteTicket(42, admin);
         verify(response).sendRedirect("/helpdesk/tech-dashboard?msg=ticket_deleted");
     }
 
     @Test
-    @DisplayName("TicketDeleteServlet - Delete single ticket forbidden for unauthorized user")
+    @DisplayName("TicketDeleteServlet - Delete single ticket forbidden for non-admin")
     public void testTicketDeleteServletDeleteSingleForbidden() throws Exception {
-        User regularUser = User.builder().userId(2).name("Jane Smith").role("USER").build();
+        User technician = User.builder().userId(3).name("Bhavani").role("TECHNICIAN").build();
         when(request.getSession(false)).thenReturn(session);
-        when(session.getAttribute("user")).thenReturn(regularUser);
+        when(session.getAttribute("user")).thenReturn(technician);
         when(request.getParameter("action")).thenReturn("deleteSingle");
         when(request.getParameter("ticketId")).thenReturn("42");
 
         TicketService mockService = mock(TicketService.class);
-        when(mockService.deleteTicket(42, regularUser))
-            .thenReturn(ServiceResult.fail("FORBIDDEN", "You are not authorized to delete this ticket."));
 
         TicketDeleteServlet servlet = new TicketDeleteServlet(mockService);
         servlet.doPost(request, response);
 
-        verify(response).sendError(eq(HttpServletResponse.SC_FORBIDDEN), contains("not authorized"));
+        verify(response).sendError(eq(HttpServletResponse.SC_FORBIDDEN), anyString());
+    }
+
+    @Test
+    @DisplayName("TicketCommentServlet - Blocks user commenting on CLOSED ticket")
+    public void testTicketCommentServletDeniedForClosedTicket() throws Exception {
+        User regularUser = User.builder().userId(1).name("John Doe").role("USER").build();
+        when(request.getSession(false)).thenReturn(session);
+        when(session.getAttribute("user")).thenReturn(regularUser);
+        when(request.getParameter("ticketId")).thenReturn("99");
+        when(request.getParameter("commentText")).thenReturn("Can we still talk?");
+        when(request.getContextPath()).thenReturn("/helpdesk");
+
+        Ticket closedTicket = Ticket.builder().ticketId(99).userId(1).status("CLOSED").build();
+        CommentService mockCommService = mock(CommentService.class);
+        TicketService mockTicketService = mock(TicketService.class);
+        when(mockTicketService.getTicketById(99)).thenReturn(Optional.of(closedTicket));
+
+        TicketCommentServlet servlet = new TicketCommentServlet(mockCommService, mockTicketService);
+        servlet.doPost(request, response);
+
+        verify(response).sendRedirect("/helpdesk/ticket-detail?id=99&error=ticket_closed");
+        verify(mockCommService, never()).addComment(any(), any());
     }
 }

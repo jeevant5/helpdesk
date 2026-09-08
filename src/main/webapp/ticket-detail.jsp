@@ -83,6 +83,12 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             </c:if>
+            <c:if test="${param.error eq 'ticket_closed'}">
+                <div class="alert alert-warning alert-dismissible fade show py-2" role="alert">
+                    <i class="bi bi-lock-fill me-2"></i>This ticket has been closed. Discussion thread is locked and replies are disabled.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            </c:if>
 
             <div class="thread-container mb-4">
                 <c:choose>
@@ -113,40 +119,58 @@
                 </c:choose>
             </div>
 
-            <!-- Post New Comment & Dynamically Update Status (Handled by TicketCommentServlet) -->
-            <div class="card border-0 bg-light p-3 rounded-3">
-                <h6 class="fw-bold mb-2">Add Reply / Resolution Update</h6>
-                <form action="${pageContext.request.contextPath}/ticket-comment" method="post">
-                    <input type="hidden" name="ticketId" value="${ticket.ticketId}">
-
-                    <div class="mb-3">
-                        <textarea class="form-control" name="commentText" rows="4" required 
-                                  placeholder="Type your response, troubleshooting questions, or resolution notes..."></textarea>
+            <!-- Post New Comment & Dynamically Update Status -->
+            <c:choose>
+                <c:when test="${ticket.status eq 'CLOSED' and not sessionScope.user.technician}">
+                    <div class="alert alert-secondary py-3 text-center mb-0" role="alert">
+                        <i class="bi bi-lock-fill me-2 fs-5 text-secondary"></i>
+                        <span class="fw-semibold">This ticket is CLOSED. The discussion thread is locked and replies are disabled.</span>
                     </div>
+                </c:when>
+                <c:otherwise>
+                    <div class="card border-0 bg-light p-3 rounded-3">
+                        <h6 class="fw-bold mb-2">Add Reply / Resolution Update</h6>
+                        <form action="${pageContext.request.contextPath}/ticket-comment" method="post">
+                            <input type="hidden" name="ticketId" value="${ticket.ticketId}">
 
-                    <div class="row align-items-center g-2">
-                        <div class="col-md-7">
-                            <div class="input-group">
-                                <label class="input-group-text bg-white small fw-semibold" for="newStatus">
-                                    <i class="bi bi-arrow-repeat me-1"></i>Change Status:
-                                </label>
-                                <select class="form-select" id="newStatus" name="newStatus">
-                                    <option value="NO_CHANGE" selected>-- Keep Current Status (${ticket.status}) --</option>
-                                    <option value="OPEN">Mark as OPEN</option>
-                                    <option value="IN_PROGRESS">Mark as IN_PROGRESS</option>
-                                    <option value="RESOLVED">Mark as RESOLVED</option>
-                                    <option value="CLOSED">Mark as CLOSED</option>
-                                </select>
+                            <div class="mb-3">
+                                <textarea class="form-control" name="commentText" rows="4" required 
+                                          placeholder="Type your response, troubleshooting questions, or resolution notes..."></textarea>
                             </div>
-                        </div>
-                        <div class="col-md-5 text-md-end">
-                            <button type="submit" class="btn btn-primary px-4 fw-semibold w-100 w-md-auto">
-                                <i class="bi bi-send-check me-1"></i>Post Update
-                            </button>
-                        </div>
+
+                            <div class="row align-items-center g-2">
+                                <div class="col-md-7">
+                                    <div class="input-group">
+                                        <label class="input-group-text bg-white small fw-semibold" for="newStatus">
+                                            <i class="bi bi-arrow-repeat me-1"></i>Change Status:
+                                        </label>
+                                        <select class="form-select" id="newStatus" name="newStatus">
+                                            <option value="NO_CHANGE" selected>-- Keep Current Status (${ticket.status}) --</option>
+                                            <c:if test="${ticket.status ne 'OPEN'}">
+                                                <option value="OPEN">Mark as OPEN</option>
+                                            </c:if>
+                                            <c:if test="${ticket.status ne 'IN_PROGRESS'}">
+                                                <option value="IN_PROGRESS">Mark as IN_PROGRESS</option>
+                                            </c:if>
+                                            <c:if test="${ticket.status ne 'RESOLVED' and ticket.status ne 'CLOSED'}">
+                                                <option value="RESOLVED">Mark as RESOLVED</option>
+                                            </c:if>
+                                            <c:if test="${ticket.status ne 'CLOSED'}">
+                                                <option value="CLOSED">Mark as CLOSED</option>
+                                            </c:if>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-5 text-md-end">
+                                    <button type="submit" class="btn btn-primary px-4 fw-semibold w-100 w-md-auto">
+                                        <i class="bi bi-send-check me-1"></i>Post Update
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
                     </div>
-                </form>
-            </div>
+                </c:otherwise>
+            </c:choose>
 
             <!-- Customer Satisfaction (CSAT) Section -->
             <c:if test="${ticket.status eq 'RESOLVED' || ticket.status eq 'CLOSED'}">
@@ -290,8 +314,8 @@
             </div>
         </div>
 
-        <!-- Danger Zone: Delete Ticket -->
-        <c:if test="${sessionScope.user.technician or sessionScope.user.userId eq ticket.userId}">
+        <!-- Danger Zone: Delete Ticket (Admin Only) -->
+        <c:if test="${sessionScope.user.admin}">
             <div class="card p-3 shadow-sm border-danger-subtle mt-4">
                 <h6 class="fw-bold text-danger mb-2"><i class="bi bi-exclamation-triangle-fill me-1"></i>Danger Zone</h6>
                 <p class="small text-muted mb-3">Permanently delete this ticket and all associated discussion comment threads.</p>

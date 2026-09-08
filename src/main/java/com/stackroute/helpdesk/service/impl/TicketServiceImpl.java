@@ -206,8 +206,9 @@ public class TicketServiceImpl implements TicketService {
         if (ticket == null) {
             return ServiceResult.fail("NOT_FOUND", "Ticket not found.");
         }
-        if (!currentUser.isTechnician() && !currentUser.isAdmin() && ticket.getUserId() != currentUser.getUserId()) {
-            return ServiceResult.fail("FORBIDDEN", "You are not authorized to delete this ticket.");
+        // Only administrators can delete tickets
+        if (!currentUser.isAdmin()) {
+            return ServiceResult.fail("FORBIDDEN", "Only administrators have permission to delete tickets.");
         }
 
         boolean deleted = ticketDAO.deleteTicket(ticketId);
@@ -222,8 +223,9 @@ public class TicketServiceImpl implements TicketService {
         if (currentUser == null) {
             return ServiceResult.fail("UNAUTHORIZED", "Authentication required to purge tickets.");
         }
-        if (!currentUser.isTechnician() && !currentUser.isAdmin()) {
-            return ServiceResult.fail("FORBIDDEN", "Only technicians or administrators can purge all tickets.");
+        // Only administrators can purge all tickets
+        if (!currentUser.isAdmin()) {
+            return ServiceResult.fail("FORBIDDEN", "Only administrators have permission to purge all tickets.");
         }
 
         int count = ticketDAO.deleteAllTickets();
