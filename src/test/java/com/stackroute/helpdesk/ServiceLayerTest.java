@@ -360,4 +360,42 @@ public class ServiceLayerTest {
         ServiceResult<User> authRes = userService.authenticate("john@example.com", "user123");
         assertTrue(authRes.isSuccess());
     }
+
+    @Test
+    @Order(12)
+    @DisplayName("TicketService - Delete Ticket and Purge Permissions")
+    public void testTicketServiceDeleteAndPurgePermissions() {
+        User regularUser1 = User.builder().userId(1).name("John Doe").role("USER").build();
+        User regularUser2 = User.builder().userId(2).name("Jane Smith").role("USER").build();
+        User technician = User.builder().userId(3).name("Bhavani").role("TECHNICIAN").build();
+
+        Ticket t = Ticket.builder()
+            .userId(1)
+            .title("Test Ticket For Service Layer Delete")
+            .description("Description for delete test")
+            .priority("LOW")
+            .build();
+        ServiceResult<Ticket> createResult = ticketService.createTicket(t, null, 0);
+        assertTrue(createResult.isSuccess());
+        int ticketId = createResult.getData().orElseThrow().getTicketId();
+
+        // User 2 cannot delete User 1's ticket
+        ServiceResult<Void> forbiddenDelete = ticketService.deleteTicket(ticketId, regularUser2);
+        assertTrue(forbiddenDelete.isFailure());
+        assertEquals("FORBIDDEN", forbiddenDelete.getErrorCode());
+
+        // Regular user cannot purge all tickets
+        ServiceResult<Integer> forbiddenPurge = ticketService.deleteAllTickets(regularUser1);
+        assertTrue(forbiddenPurge.isFailure());
+        assertEquals("FORBIDDEN", forbiddenPurge.getErrorCode());
+
+        // Owner can delete their own ticket
+        ServiceResult<Void> ownerDelete = ticketService.deleteTicket(ticketId, regularUser1);
+        assertTrue(ownerDelete.isSuccess());
+        assertTrue(ticketService.getTicketById(ticketId).isEmpty());
+
+        // Technician can purge tickets
+        ServiceResult<Integer> techPurge = ticketService.deleteAllTickets(technician);
+        assertTrue(techPurge.isSuccess());
+    }
 }

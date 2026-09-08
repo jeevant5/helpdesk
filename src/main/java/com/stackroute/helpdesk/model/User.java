@@ -40,4 +40,8 @@ public class User implements Serializable {
     public boolean isEndUser() {
         return "USER".equalsIgnoreCase(this.role);
     }
+
+    public boolean isAdmin() {
+        return "ADMIN".equalsIgnoreCase(this.role);
+    }
 }

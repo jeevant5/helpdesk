@@ -64,6 +64,17 @@ public sealed interface ServiceResult<T> permits ServiceResult.Success, ServiceR
         return "";
     }
 
+    default String getErrorCode() {
+        if (this instanceof Failure<T> f) {
+            return f.errorCode();
+        }
+        return "";
+    }
+
+    default String getErrorMessage() {
+        return getMessage();
+    }
+
     default void ifSuccess(Consumer<T> consumer) {
         if (this instanceof Success<T> s && s.data() != null) {
             consumer.accept(s.data());

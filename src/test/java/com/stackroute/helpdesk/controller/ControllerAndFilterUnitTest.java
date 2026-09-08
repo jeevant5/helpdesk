@@ -6,7 +6,9 @@ import com.stackroute.helpdesk.filter.CharacterEncodingFilter;
 import com.stackroute.helpdesk.filter.GlobalExceptionFilter;
 import com.stackroute.helpdesk.model.Ticket;
 import com.stackroute.helpdesk.model.User;
+import com.stackroute.helpdesk.service.TicketService;
 import com.stackroute.helpdesk.util.DBUtil;
+import com.stackroute.helpdesk.util.ServiceResult;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletOutputStream;
@@ -314,7 +316,21 @@ public class ControllerAndFilterUnitTest {
     @Test
     @DisplayName("TicketDetailServlet - Redirects regular user trying to access another user's ticket")
     public void testTicketDetailServletUnauthorizedAccess() throws Exception {
-        Ticket existingTicket = new TicketDAO().getAllTickets().stream().findFirst().orElseThrow();
+        TicketDAO tDao = new TicketDAO();
+        Ticket existingTicket = tDao.getAllTickets().stream().findFirst().orElseGet(() -> {
+            Ticket t = new Ticket();
+            t.setUserId(1);
+            t.setTitle("Fallback Ticket For Auth Test");
+            t.setDescription("Sample Description");
+            t.setPriority("LOW");
+            try {
+                int id = tDao.createTicket(t, null, 0);
+                t.setTicketId(id);
+                return t;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
         when(request.getParameter("id")).thenReturn(String.valueOf(existingTicket.getTicketId()));
         when(request.getSession(false)).thenReturn(session);
         when(request.getContextPath()).thenReturn("/helpdesk");
@@ -330,7 +346,21 @@ public class ControllerAndFilterUnitTest {
     @Test
     @DisplayName("AttachmentDownloadServlet - Denies regular user downloading another user's attachment")
     public void testAttachmentDownloadServletUnauthorizedAccess() throws Exception {
-        Ticket existingTicket = new TicketDAO().getAllTickets().stream().findFirst().orElseThrow();
+        TicketDAO tDao = new TicketDAO();
+        Ticket existingTicket = tDao.getAllTickets().stream().findFirst().orElseGet(() -> {
+            Ticket t = new Ticket();
+            t.setUserId(1);
+            t.setTitle("Fallback Ticket For Auth Test 2");
+            t.setDescription("Sample Description");
+            t.setPriority("LOW");
+            try {
+                int id = tDao.createTicket(t, null, 0);
+                t.setTicketId(id);
+                return t;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
         when(request.getParameter("id")).thenReturn(String.valueOf(existingTicket.getTicketId()));
         when(request.getSession(false)).thenReturn(session);
         User otherUser = User.builder().userId(existingTicket.getUserId() + 9999).name("Other User").role("USER").build();
@@ -407,5 +437,80 @@ public class ControllerAndFilterUnitTest {
         verify(request).setAttribute(eq("incidentId"), anyString());
         verify(request).setAttribute(eq("exceptionMessage"), contains("Simulated unexpected catastrophe"));
         verify(dispatcher).forward(request, response);
+    }
+
+    @Test
+    @DisplayName("TicketDeleteServlet - Purge all tickets successfully as technician")
+    public void testTicketDeleteServletPurgeAllSuccess() throws Exception {
+        User tech = User.builder().userId(3).name("Bhavani").role("TECHNICIAN").build();
+        when(request.getSession(false)).thenReturn(session);
+        when(session.getAttribute("user")).thenReturn(tech);
+        when(request.getParameter("action")).thenReturn("purgeAll");
+        when(request.getContextPath()).thenReturn("/helpdesk");
+
+        TicketService mockService = mock(TicketService.class);
+        when(mockService.deleteAllTickets(tech)).thenReturn(ServiceResult.ok(5, "5 tickets purged"));
+
+        TicketDeleteServlet servlet = new TicketDeleteServlet(mockService);
+        servlet.doPost(request, response);
+
+        verify(mockService).deleteAllTickets(tech);
+        verify(response).sendRedirect("/helpdesk/tech-dashboard?msg=all_purged&count=5");
+    }
+
+    @Test
+    @DisplayName("TicketDeleteServlet - Purge all tickets denied for regular user")
+    public void testTicketDeleteServletPurgeAllDeniedForRegularUser() throws Exception {
+        User regularUser = User.builder().userId(1).name("John Doe").role("USER").build();
+        when(request.getSession(false)).thenReturn(session);
+        when(session.getAttribute("user")).thenReturn(regularUser);
+        when(request.getParameter("action")).thenReturn("purgeAll");
+
+        TicketService mockService = mock(TicketService.class);
+
+        TicketDeleteServlet servlet = new TicketDeleteServlet(mockService);
+        servlet.doPost(request, response);
+
+        verify(response).sendError(eq(HttpServletResponse.SC_FORBIDDEN), anyString());
+        verify(mockService, never()).deleteAllTickets(any());
+    }
+
+    @Test
+    @DisplayName("TicketDeleteServlet - Delete single ticket successfully")
+    public void testTicketDeleteServletDeleteSingleSuccess() throws Exception {
+        User tech = User.builder().userId(3).name("Bhavani").role("TECHNICIAN").build();
+        when(request.getSession(false)).thenReturn(session);
+        when(session.getAttribute("user")).thenReturn(tech);
+        when(request.getParameter("action")).thenReturn("deleteSingle");
+        when(request.getParameter("ticketId")).thenReturn("42");
+        when(request.getContextPath()).thenReturn("/helpdesk");
+
+        TicketService mockService = mock(TicketService.class);
+        when(mockService.deleteTicket(42, tech)).thenReturn(ServiceResult.ok(null, "Deleted"));
+
+        TicketDeleteServlet servlet = new TicketDeleteServlet(mockService);
+        servlet.doPost(request, response);
+
+        verify(mockService).deleteTicket(42, tech);
+        verify(response).sendRedirect("/helpdesk/tech-dashboard?msg=ticket_deleted");
+    }
+
+    @Test
+    @DisplayName("TicketDeleteServlet - Delete single ticket forbidden for unauthorized user")
+    public void testTicketDeleteServletDeleteSingleForbidden() throws Exception {
+        User regularUser = User.builder().userId(2).name("Jane Smith").role("USER").build();
+        when(request.getSession(false)).thenReturn(session);
+        when(session.getAttribute("user")).thenReturn(regularUser);
+        when(request.getParameter("action")).thenReturn("deleteSingle");
+        when(request.getParameter("ticketId")).thenReturn("42");
+
+        TicketService mockService = mock(TicketService.class);
+        when(mockService.deleteTicket(42, regularUser))
+            .thenReturn(ServiceResult.fail("FORBIDDEN", "You are not authorized to delete this ticket."));
+
+        TicketDeleteServlet servlet = new TicketDeleteServlet(mockService);
+        servlet.doPost(request, response);
+
+        verify(response).sendError(eq(HttpServletResponse.SC_FORBIDDEN), contains("not authorized"));
     }
 }

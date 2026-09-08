@@ -377,4 +377,53 @@ public class TicketDAO {
         t.setTechName(rs.getString("tech_name"));
         return t;
     }
+
+    public boolean deleteTicket(int ticketId) {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        try {
+            conn = DBUtil.getConnection();
+            try (PreparedStatement psFb = conn.prepareStatement("DELETE FROM ticket_feedback WHERE ticket_id = ?")) {
+                psFb.setInt(1, ticketId);
+                psFb.executeUpdate();
+            } catch (SQLException ignored) {}
+
+            try (PreparedStatement psComm = conn.prepareStatement("DELETE FROM ticket_comments WHERE ticket_id = ?")) {
+                psComm.setInt(1, ticketId);
+                psComm.executeUpdate();
+            } catch (SQLException ignored) {}
+
+            ps = conn.prepareStatement("DELETE FROM tickets WHERE ticket_id = ?");
+            ps.setInt(1, ticketId);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DBUtil.close(conn, ps);
+        }
+        return false;
+    }
+
+    public int deleteAllTickets() {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        try {
+            conn = DBUtil.getConnection();
+            try (PreparedStatement psFb = conn.prepareStatement("DELETE FROM ticket_feedback")) {
+                psFb.executeUpdate();
+            } catch (SQLException ignored) {}
+
+            try (PreparedStatement psComm = conn.prepareStatement("DELETE FROM ticket_comments")) {
+                psComm.executeUpdate();
+            } catch (SQLException ignored) {}
+
+            ps = conn.prepareStatement("DELETE FROM tickets");
+            return ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DBUtil.close(conn, ps);
+        }
+        return 0;
+    }
 }

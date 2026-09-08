@@ -4,6 +4,7 @@ import com.stackroute.helpdesk.dao.TicketDAO;
 import com.stackroute.helpdesk.dto.TicketSearchCriteria;
 import com.stackroute.helpdesk.dto.TicketStatisticsDTO;
 import com.stackroute.helpdesk.model.Ticket;
+import com.stackroute.helpdesk.model.User;
 import com.stackroute.helpdesk.service.TicketService;
 import com.stackroute.helpdesk.util.ServiceResult;
 
@@ -190,5 +191,42 @@ public class TicketServiceImpl implements TicketService {
     private String escapeCsv(String input) {
         if (input == null) return "";
         return input.replace("\"", "\"\"");
+    }
+
+    @Override
+    public ServiceResult<Void> deleteTicket(int ticketId, User currentUser) {
+        if (currentUser == null) {
+            return ServiceResult.fail("UNAUTHORIZED", "Authentication required to delete tickets.");
+        }
+        if (ticketId <= 0) {
+            return ServiceResult.fail("INVALID_ID", "Valid ticket ID is required.");
+        }
+
+        Ticket ticket = ticketDAO.getTicketById(ticketId);
+        if (ticket == null) {
+            return ServiceResult.fail("NOT_FOUND", "Ticket not found.");
+        }
+        if (!currentUser.isTechnician() && !currentUser.isAdmin() && ticket.getUserId() != currentUser.getUserId()) {
+            return ServiceResult.fail("FORBIDDEN", "You are not authorized to delete this ticket.");
+        }
+
+        boolean deleted = ticketDAO.deleteTicket(ticketId);
+        if (deleted) {
+            return ServiceResult.ok(null, "Ticket #" + ticketId + " has been deleted.");
+        }
+        return ServiceResult.fail("DELETE_FAILED", "Failed to delete ticket from database.");
+    }
+
+    @Override
+    public ServiceResult<Integer> deleteAllTickets(User currentUser) {
+        if (currentUser == null) {
+            return ServiceResult.fail("UNAUTHORIZED", "Authentication required to purge tickets.");
+        }
+        if (!currentUser.isTechnician() && !currentUser.isAdmin()) {
+            return ServiceResult.fail("FORBIDDEN", "Only technicians or administrators can purge all tickets.");
+        }
+
+        int count = ticketDAO.deleteAllTickets();
+        return ServiceResult.ok(count, "All tickets (" + count + ") have been successfully purged.");
     }
 }

@@ -289,6 +289,21 @@
                 </c:if>
             </div>
         </div>
+
+        <!-- Danger Zone: Delete Ticket -->
+        <c:if test="${sessionScope.user.technician or sessionScope.user.userId eq ticket.userId}">
+            <div class="card p-3 shadow-sm border-danger-subtle mt-4">
+                <h6 class="fw-bold text-danger mb-2"><i class="bi bi-exclamation-triangle-fill me-1"></i>Danger Zone</h6>
+                <p class="small text-muted mb-3">Permanently delete this ticket and all associated discussion comment threads.</p>
+                <form action="${pageContext.request.contextPath}/ticket-delete" method="post" onsubmit="return confirm('Are you sure you want to permanently delete Ticket #${ticket.ticketId}? This cannot be undone.');">
+                    <input type="hidden" name="action" value="deleteSingle">
+                    <input type="hidden" name="ticketId" value="${ticket.ticketId}">
+                    <button type="submit" class="btn btn-outline-danger w-100 btn-sm fw-semibold">
+                        <i class="bi bi-trash3 me-1"></i>Delete Ticket #${ticket.ticketId}
+                    </button>
+                </form>
+            </div>
+        </c:if>
     </div>
 </div>
 

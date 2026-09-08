@@ -34,6 +34,11 @@
         <i class="bi bi-shield-lock-fill me-2"></i>Access Denied: You are not authorized to view other users' tickets.
     </div>
 </c:if>
+<c:if test="${param.msg eq 'ticket_deleted'}">
+    <div class="alert alert-success py-2" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>Ticket was successfully deleted.
+    </div>
+</c:if>
 
 <!-- Search and Filter Bar -->
 <div class="card shadow-sm mb-4">

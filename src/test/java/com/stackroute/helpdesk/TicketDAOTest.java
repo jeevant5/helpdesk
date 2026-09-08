@@ -278,4 +278,39 @@ public class TicketDAOTest {
         assertTrue(lowTicket.getSlaStatusText().contains("left"));
         assertEquals("badge bg-success", lowTicket.getSlaBadgeClass());
     }
+
+    @Test
+    @Order(11)
+    public void testDeleteTicketSingle() throws Exception {
+        Ticket temp = new Ticket();
+        temp.setUserId(1);
+        temp.setTitle("Temporary Ticket for Single Delete Test");
+        temp.setDescription("This ticket will be deleted by unit test.");
+        temp.setPriority("LOW");
+        int tempId = ticketDAO.createTicket(temp, null, 0);
+        assertTrue(tempId > 0, "Temp ticket created");
+
+        boolean deleted = ticketDAO.deleteTicket(tempId);
+        assertTrue(deleted, "Ticket deletion should succeed");
+        assertNull(ticketDAO.getTicketById(tempId), "Deleted ticket should no longer exist in DB");
+    }
+
+    @Test
+    @Order(12)
+    public void testDeleteAllTickets() throws Exception {
+        // Create a couple of dummy tickets to ensure there are tickets to purge
+        Ticket t1 = new Ticket();
+        t1.setUserId(1);
+        t1.setTitle("Dummy Ticket 1 for Purge");
+        t1.setDescription("Purge test description 1");
+        t1.setPriority("LOW");
+        ticketDAO.createTicket(t1, null, 0);
+
+        int count = ticketDAO.deleteAllTickets();
+        assertTrue(count >= 1, "At least 1 ticket should be deleted during purge");
+        Map<String, Integer> counts = ticketDAO.getStatusCounts();
+        assertEquals(0, counts.get("OPEN").intValue());
+        assertEquals(0, counts.get("IN_PROGRESS").intValue());
+        assertEquals(0, counts.get("RESOLVED").intValue());
+    }
 }

@@ -9,6 +9,9 @@
         <p class="text-muted small mb-0">Real-time aggregate ticket metrics, unassigned queue, and technician work log.</p>
     </div>
     <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#purgeAllModal">
+            <i class="bi bi-trash3 me-1"></i>Purge All Tickets
+        </button>
         <a href="${pageContext.request.contextPath}/export-tickets" class="btn btn-outline-success btn-sm">
             <i class="bi bi-filetype-csv me-1"></i>Export All (CSV)
         </a>
@@ -28,6 +31,27 @@
 <c:if test="${param.msg eq 'assigned'}">
     <div class="alert alert-success alert-dismissible fade show py-2" role="alert">
         <i class="bi bi-check-circle-fill me-2"></i>Ticket successfully claimed and assigned to you!
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+</c:if>
+
+<c:if test="${param.msg eq 'all_purged'}">
+    <div class="alert alert-success alert-dismissible fade show py-2" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>All tickets have been successfully purged from the database (${not empty param.count ? param.count : 'all'} tickets removed).
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+</c:if>
+
+<c:if test="${param.msg eq 'ticket_deleted'}">
+    <div class="alert alert-success alert-dismissible fade show py-2" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>Ticket was successfully deleted.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+</c:if>
+
+<c:if test="${param.error eq 'delete_failed' or param.error eq 'purge_failed'}">
+    <div class="alert alert-danger alert-dismissible fade show py-2" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>Failed to complete the ticket deletion operation. Please try again.
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 </c:if>
@@ -156,12 +180,21 @@
                                         <fmt:formatDate value="${t.createdAt}" pattern="yyyy-MM-dd HH:mm" />
                                     </td>
                                     <td class="text-end pe-4">
-                                        <form action="${pageContext.request.contextPath}/assign-ticket" method="post" class="d-inline">
-                                            <input type="hidden" name="ticketId" value="${t.ticketId}">
-                                            <button type="submit" class="btn btn-warning btn-sm fw-semibold">
-                                                <i class="bi bi-person-plus-fill me-1"></i>Assign to Me
-                                            </button>
-                                        </form>
+                                        <div class="d-inline-flex gap-1">
+                                            <form action="${pageContext.request.contextPath}/assign-ticket" method="post" class="d-inline">
+                                                <input type="hidden" name="ticketId" value="${t.ticketId}">
+                                                <button type="submit" class="btn btn-warning btn-sm fw-semibold">
+                                                    <i class="bi bi-person-plus-fill me-1"></i>Assign to Me
+                                                </button>
+                                            </form>
+                                            <form action="${pageContext.request.contextPath}/ticket-delete" method="post" class="d-inline" onsubmit="return confirm('Permanently delete ticket #${t.ticketId}?');">
+                                                <input type="hidden" name="action" value="deleteSingle">
+                                                <input type="hidden" name="ticketId" value="${t.ticketId}">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete Ticket">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             </c:forEach>
@@ -233,9 +266,18 @@
                                         <fmt:formatDate value="${t.createdAt}" pattern="yyyy-MM-dd HH:mm" />
                                     </td>
                                     <td class="text-end pe-4">
-                                        <a href="${pageContext.request.contextPath}/ticket-detail?id=${t.ticketId}" class="btn btn-outline-primary btn-sm">
-                                            Manage & Resolve <i class="bi bi-arrow-right ms-1"></i>
-                                        </a>
+                                        <div class="d-inline-flex gap-1">
+                                            <a href="${pageContext.request.contextPath}/ticket-detail?id=${t.ticketId}" class="btn btn-outline-primary btn-sm">
+                                                Manage & Resolve <i class="bi bi-arrow-right ms-1"></i>
+                                            </a>
+                                            <form action="${pageContext.request.contextPath}/ticket-delete" method="post" class="d-inline" onsubmit="return confirm('Permanently delete ticket #${t.ticketId}?');">
+                                                <input type="hidden" name="action" value="deleteSingle">
+                                                <input type="hidden" name="ticketId" value="${t.ticketId}">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete Ticket">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             </c:forEach>
@@ -250,6 +292,36 @@
                     </c:choose>
                 </tbody>
             </table>
+        </div>
+    </div>
+</div>
+
+<!-- Purge All Tickets Modal -->
+<div class="modal fade" id="purgeAllModal" tabindex="-1" aria-labelledby="purgeAllModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="${pageContext.request.contextPath}/ticket-delete" method="post">
+                <input type="hidden" name="action" value="purgeAll">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="purgeAllModalLabel">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>Purge All Tickets
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2 fw-semibold text-danger">Are you sure you want to permanently delete ALL tickets?</p>
+                    <p class="text-muted small mb-0">
+                        This operation will permanently remove all tickets, attachment files, and discussion comment history from the database. 
+                        This action <strong>cannot</strong> be undone.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash3 me-1"></i>Yes, Purge All Tickets
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
