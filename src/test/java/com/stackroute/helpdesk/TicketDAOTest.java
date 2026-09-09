@@ -183,6 +183,16 @@ public class TicketDAOTest {
         User authUser = userDAO.authenticate(userEmail, "userPass456");
         assertNotNull(authUser);
         assertFalse(authUser.isTechnician());
+
+        // Clean up temporary test users created so they don't pollute the persistent DB
+        try (java.sql.Connection conn = DBUtil.getConnection();
+             java.sql.PreparedStatement ps = conn.prepareStatement("DELETE FROM users WHERE email IN (?, ?)")) {
+            ps.setString(1, techEmail);
+            ps.setString(2, userEmail);
+            ps.executeUpdate();
+        } catch (java.sql.SQLException e) {
+            // Ignore cleanup failure in unit test
+        }
     }
 
     @Test
