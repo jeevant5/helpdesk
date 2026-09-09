@@ -378,6 +378,42 @@ public class ControllerAndFilterUnitTest {
     }
 
     @Test
+    @DisplayName("AttachmentDownloadServlet - Allows technician to view and download any attachment")
+    public void testAttachmentDownloadServletTechnicianSuccess() throws Exception {
+        User technician = User.builder().userId(3).name("Bhavani").role("TECHNICIAN").build();
+        Ticket ticket = Ticket.builder()
+            .ticketId(127)
+            .userId(1)
+            .hasAttachment(true)
+            .attachmentName("screenshot.png")
+            .attachmentType("image/png")
+            .build();
+
+        when(request.getParameter("id")).thenReturn("127");
+        when(request.getSession(false)).thenReturn(session);
+        when(session.getAttribute("user")).thenReturn(technician);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ServletOutputStream sos = new ServletOutputStream() {
+            @Override public boolean isReady() { return true; }
+            @Override public void setWriteListener(WriteListener writeListener) {}
+            @Override public void write(int b) throws IOException { baos.write(b); }
+        };
+        when(response.getOutputStream()).thenReturn(sos);
+
+        TicketService mockTicketService = mock(TicketService.class);
+        when(mockTicketService.getTicketById(127)).thenReturn(Optional.of(ticket));
+        when(mockTicketService.writeAttachment(eq(127), any())).thenReturn(true);
+
+        AttachmentDownloadServlet servlet = new AttachmentDownloadServlet(mockTicketService);
+        servlet.doGet(request, response);
+
+        verify(response).setContentType("image/png");
+        verify(response).setHeader(eq("Content-Disposition"), contains("inline; filename=\"screenshot.png\""));
+        verify(mockTicketService).writeAttachment(eq(127), any());
+    }
+
+    @Test
     @DisplayName("AuthenticationFilter - Blocks regular users from accessing /export-tickets")
     public void testAuthenticationFilterBlocksExportForRegularUser() throws Exception {
         when(request.getServletPath()).thenReturn("/export-tickets");

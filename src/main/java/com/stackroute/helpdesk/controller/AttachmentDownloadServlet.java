@@ -15,10 +15,18 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Optional;
 
-@WebServlet("/download-attachment")
+@WebServlet(urlPatterns = {"/attachment", "/download-attachment"})
 public class AttachmentDownloadServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
-    private final TicketService ticketService = new TicketServiceImpl();
+    private final TicketService ticketService;
+
+    public AttachmentDownloadServlet() {
+        this(new TicketServiceImpl());
+    }
+
+    public AttachmentDownloadServlet(TicketService ticketService) {
+        this.ticketService = ticketService;
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
@@ -60,14 +68,15 @@ public class AttachmentDownloadServlet extends HttpServlet {
             }
 
             String contentType = ticket.getAttachmentType() != null ? ticket.getAttachmentType() : "application/octet-stream";
-            String fileName = ticket.getAttachmentName() != null ? ticket.getAttachmentName() : "attachment";
+            String rawFileName = ticket.getAttachmentName() != null ? ticket.getAttachmentName() : "attachment";
+            String cleanFileName = rawFileName.replace("\r", "").replace("\n", "").replace("\"", "");
 
             response.setContentType(contentType);
-            response.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+            response.setHeader("Content-Disposition", "inline; filename=\"" + cleanFileName + "\"");
 
             try (OutputStream out = response.getOutputStream()) {
                 boolean success = ticketService.writeAttachment(ticketId, out);
-                if (!success) {
+                if (!success && !response.isCommitted()) {
                     response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Could not stream BLOB attachment.");
                 }
             }
